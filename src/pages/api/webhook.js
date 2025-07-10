@@ -1,3 +1,7 @@
+// Cache temporal para evitar respuestas duplicadas (opcional)
+const processedMessages = new Set();
+setInterval(() => processedMessages.clear(), 1000 * 60 * 5);
+
 export const config = {
   api: {
     bodyParser: {
@@ -11,6 +15,7 @@ export default async function handler(req, res) {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
   const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
+  const MODEL_NAME = process.env.MODEL_NAME || "deepseek/deepseek-r1-0528-qwen3-8b:free";
 
   if (req.method === 'GET') {
     const mode = req.query['hub.mode'];
@@ -30,9 +35,13 @@ export default async function handler(req, res) {
     const messageObj = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     const userMessage = messageObj?.text?.body;
     const senderNumber = messageObj?.from;
+    const messageId = messageObj?.id;
 
-    if (!userMessage || !senderNumber) return res.status(200).end();
+    if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
+    if (processedMessages.has(messageId)) return res.status(200).end();
+    processedMessages.add(messageId);
 
+    // 🧠 Solicitud al modelo
     const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -40,7 +49,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-r1-0528-qwen3-8b:free",
+        model: MODEL_NAME,
         messages: [
           {
             role: "system",
@@ -68,8 +77,16 @@ No inventes información. No respondas sobre otros temas. Sé breve, claro y ama
     });
 
     const aiJson = await aiResponse.json();
-    const replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
+    // Validación robusta
+    if (!aiJson.choices || !aiJson.choices[0]?.message?.content) {
+      console.error("❌ Error en respuesta de OpenRouter:", aiJson);
+      return res.status(200).end();
+    }
+
+    const replyText = aiJson.choices[0].message.content;
+
+    // 📤 Respuesta por WhatsApp
     const whatsappRes = await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
       headers: {
