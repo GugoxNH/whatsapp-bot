@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       return res.status(200).send(challenge);
     } else {
-      return res.sendStatus(403);
+      return res.status(403).end();
     }
   }
 
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     const userMessage = messageObj?.text?.body;
     const senderNumber = messageObj?.from;
 
-    if (!userMessage || !senderNumber) return res.sendStatus(200);
+    if (!userMessage || !senderNumber) return res.status(200).end();
 
     const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -45,26 +45,25 @@ export default async function handler(req, res) {
           {
             role: "system",
             content: `
-                  Eres un asistente de una dulcería llamada CandyShop. Solo debes responder preguntas relacionadas con los siguientes productos:
+Eres un asistente de una dulcería llamada CandyShop. Solo debes responder preguntas relacionadas con los siguientes productos:
 
-                  1. *Perico artesanal*: Polvo sabor limón con potente acidez. Costo: 20 pesos.
-                  2. *Cricri*: Piedritas de chocolate perfectas para derretir. Costo: 10 pesos.
-                  3. *Fenti*: Pastillas sabor menta que dejan un sabor delicioso todo el día. Costo: 5 pesos.
+1. *Perico artesanal*: Polvo sabor limón con potente acidez. Costo: 20 pesos.
+2. *Cricri*: Piedritas de chocolate perfectas para derretir. Costo: 10 pesos.
+3. *Fenti*: Pastillas sabor menta que dejan un sabor delicioso todo el día. Costo: 5 pesos.
 
-                  Los productos se venden únicamente por transferencia de bitcoin a la cartera "0######XXXXXX".
+Los productos se venden únicamente por transferencia de bitcoin a la cartera "0######XXXXXX".
 
-                  Si el usuario hace una pregunta que no esté relacionada con esos productos, sus precios o la forma de pago, respóndele con amabilidad que para obtener más información o hacer preguntas más específicas debe contactar con un distribuidor oficial llamado *CandyShop*, número: XXX-XXX-XX-XX.
+Si el usuario hace una pregunta que no esté relacionada con esos productos, sus precios o la forma de pago, respóndele con amabilidad que para obtener más información o hacer preguntas más específicas debe contactar con un distribuidor oficial llamado *CandyShop*, número: XXX-XXX-XX-XX.
 
-                  Si el usuario se le nota interesado, trata de persuadirlo para comprar cualquier producto.
+Si el usuario se le nota interesado, trata de persuadirlo para comprar cualquier producto.
 
-                  Si el usuario te pide una recomendación, responde alguno de los tres productos al azár y hazlo que se vea bastante llamativo.
+Si el usuario te pide una recomendación, responde alguno de los tres productos al azár y hazlo que se vea bastante llamativo.
 
-                  No inventes información. No respondas sobre otros temas. Sé breve, claro y amable en todas tus respuestas.
-                  `,
+No inventes información. No respondas sobre otros temas. Sé breve, claro y amable en todas tus respuestas.
+            `,
           },
           { role: "user", content: userMessage },
         ],
-
       }),
     });
 
@@ -91,8 +90,8 @@ export default async function handler(req, res) {
     const whatsappJson = await whatsappRes.json();
     console.log("✅ Respuesta enviada a WhatsApp:", whatsappJson);
 
-    return res.sendStatus(200);
+    return res.status(200).end();
   }
 
-  res.status(405).send('Método no permitido');
+  res.status(405).end();
 }
