@@ -1,3 +1,7 @@
+const processedMessages = new Set();
+
+setInterval(() => processedMessages.clear(), 1000 * 60 * 5);
+
 export const config = {
   api: {
     bodyParser: {
@@ -11,6 +15,7 @@ export default async function handler(req, res) {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
   const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
+
 
   if (req.method === 'GET') {
     const mode = req.query['hub.mode'];
@@ -30,9 +35,18 @@ export default async function handler(req, res) {
     const messageObj = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     const userMessage = messageObj?.text?.body;
     const senderNumber = messageObj?.from;
+    const messageId = messageObj?.id;
 
-    if (!userMessage || !senderNumber) return res.sendStatus(200);
+    if (!userMessage || !senderNumber || !messageId) return res.sendStatus(200);
 
+    if (processedMessages.has(messageId)) {
+      console.log("🛑 Mensaje ya procesado:", messageId);
+      return res.sendStatus(200);
+    }
+
+    processedMessages.add(messageId);
+
+    // 🔮 Consulta a OpenRouter
     const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -45,32 +59,32 @@ export default async function handler(req, res) {
           {
             role: "system",
             content: `
-                  Eres un asistente de una dulcería llamada CandyShop. Solo debes responder preguntas relacionadas con los siguientes productos:
+Eres un asistente de una dulcería llamada CandyShop. Solo debes responder preguntas relacionadas con los siguientes productos:
 
-                  1. *Perico artesanal*: Polvo sabor limón con potente acidez. Costo: 20 pesos.
-                  2. *Cricri*: Piedritas de chocolate perfectas para derretir. Costo: 10 pesos.
-                  3. *Fenti*: Pastillas sabor menta que dejan un sabor delicioso todo el día. Costo: 5 pesos.
+1. *Perico artesanal*: Polvo sabor limón con potente acidez. Costo: 20 pesos.
+2. *Cricri*: Piedritas de chocolate perfectas para derretir. Costo: 10 pesos.
+3. *Fenti*: Pastillas sabor menta que dejan un sabor delicioso todo el día. Costo: 5 pesos.
 
-                  Los productos se venden únicamente por transferencia de bitcoin a la cartera "0######XXXXXX".
+Los productos se venden únicamente por transferencia de bitcoin a la cartera "0######XXXXXX".
 
-                  Si el usuario hace una pregunta que no esté relacionada con esos productos, sus precios o la forma de pago, respóndele con amabilidad que para obtener más información o hacer preguntas más específicas debe contactar con un distribuidor oficial llamado *CandyShop*, número: XXX-XXX-XX-XX.
+Si el usuario hace una pregunta que no esté relacionada con esos productos, sus precios o la forma de pago, respóndele con amabilidad que para obtener más información o hacer preguntas más específicas debe contactar con un distribuidor oficial llamado *CandyShop*, número: XXX-XXX-XX-XX.
 
-                  Si el usuario se le nota interesado, trata de persuadirlo para comprar cualquier producto.
+Si el usuario se le nota interesado, trata de persuadirlo para comprar cualquier producto.
 
-                  Si el usuario te pide una recomendación, responde alguno de los tres productos al azár y hazlo que se vea bastante llamativo.
+Si el usuario te pide una recomendación, responde alguno de los tres productos al azár y hazlo que se vea bastante llamativo.
 
-                  No inventes información. No respondas sobre otros temas. Sé breve, claro y amable en todas tus respuestas.
-                  `,
+No inventes información. No respondas sobre otros temas. Sé breve, claro y amable en todas tus respuestas.
+            `,
           },
           { role: "user", content: userMessage },
         ],
-
       }),
     });
 
     const aiJson = await aiResponse.json();
     const replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
+    // 📤 Respuesta a WhatsApp
     const whatsappRes = await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
       headers: {
@@ -94,5 +108,6 @@ export default async function handler(req, res) {
     return res.sendStatus(200);
   }
 
+  // ❌ Método no permitido
   res.status(405).send('Método no permitido');
 }
