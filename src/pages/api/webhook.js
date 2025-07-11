@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "Authorization": `Bearer deepseek/deepseek-r1-0528-qwen3-8b:free`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
