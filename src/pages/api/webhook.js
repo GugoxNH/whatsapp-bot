@@ -12,7 +12,6 @@ export const config = {
 
 export default async function handler(req, res) {
   const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
-  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
   const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
   const MODEL_NAME = process.env.MODEL_NAME || "deepseek/deepseek-r1-0528-qwen3-8b:free";
