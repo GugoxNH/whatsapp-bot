@@ -72,9 +72,7 @@ export default async function handler(req, res) {
         .map((v) => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
         .join("\n");
 
-      contexto += `Este es el detalle del evento "${evento.title}":\n${zonas}\n\nPágina para comprar: ${evento.link}\n\nResponde de forma clara en español.`;
-    } else if (/hola|buenas|ayuda|asistente|quién eres/i.test(userMessage)) {
-      contexto += `Responde con un saludo cálido y una breve explicación de que puedes ayudar con información sobre los eventos musicales en Preding, y que pueden pedir la lista de eventos disponibles, No asumas la ubicación del usuario`;
+      contexto += `Este es el detalle del evento "${evento.title}":\n${zonas}\n\nPágina para comprar: ${evento.link}\n\nResponde de forma clara en español.`;    
     } else {
       contexto += `El usuario escribió: "${userMessage}". Si no entiendes, dile amablemente que puede pedir la lista de eventos o escribir el número del evento para más detalles.`;
     }
