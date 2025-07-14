@@ -1,4 +1,3 @@
-// Cache temporal para evitar respuestas duplicadas (opcional)
 const processedMessages = new Set();
 setInterval(() => processedMessages.clear(), 1000 * 60 * 5);
 
@@ -15,6 +14,7 @@ export default async function handler(req, res) {
   const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
   const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
   const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
+  const MODEL_NAME = process.env.MODEL_NAME || "deepseek/deepseek-r1-0528-qwen3-8b";
 
   if (req.method === 'GET') {
     const mode = req.query['hub.mode'];
@@ -30,7 +30,6 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const body = req.body;
-
     const messageObj = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     const userMessage = messageObj?.text?.body;
     const senderNumber = messageObj?.from;
@@ -40,56 +39,53 @@ export default async function handler(req, res) {
     if (processedMessages.has(messageId)) return res.status(200).end();
     processedMessages.add(messageId);
 
-    // 🧠 Solicitud al modelo
+    // Consulta eventos disponibles
+    const eventsRes = await fetch("https://smarticket.pagaboletos.com/wp-json/whatsapp-api/v1/products");
+    const eventos = await eventsRes.json();
+
+    // 1. Compactar lista de títulos
+    const resumenEventos = eventos.map(e => `- ${e.title}`).join("\n");
+
+    // 2. Buscar si el usuario menciona un evento
+    const eventoMencionado = eventos.find(e => userMessage.toLowerCase().includes(e.title.toLowerCase().slice(0, 15)));
+
+    let contextoAdicional = "";
+    if (eventoMencionado) {
+      const zonas = eventoMencionado.variations.map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`).join("\n");
+      contextoAdicional = `\n\nDetalles del evento *${eventoMencionado.title}*:\n${zonas}\n\n🔗 ${eventoMencionado.link}`;
+    }
+
     const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-r1-0528-qwen3-8b:free",
+        model: MODEL_NAME,
         messages: [
           {
             role: "system",
-            content: `
-Eres un asistente de una dulcería llamada CandyShop. Solo debes responder preguntas relacionadas con los siguientes productos:
-
-1. *Perico artesanal*: Polvo sabor limón con potente acidez. Costo: 20 pesos.
-2. *Cricri*: Piedritas de chocolate perfectas para derretir. Costo: 10 pesos.
-3. *Fenti*: Pastillas sabor menta que dejan un sabor delicioso todo el día. Costo: 5 pesos.
-
-Los productos se venden únicamente por transferencia de bitcoin a la cartera "0######XXXXXX".
-
-Si el usuario hace una pregunta que no esté relacionada con esos productos, sus precios o la forma de pago, respóndele con amabilidad que para obtener más información o hacer preguntas más específicas debe contactar con un distribuidor oficial llamado *CandyShop*, número: XXX-XXX-XX-XX.
-
-Si el usuario se le nota interesado, trata de persuadirlo para comprar cualquier producto.
-
-Si el usuario te pide una recomendación, responde alguno de los tres productos al azár y hazlo que se vea bastante llamativo.
-
-No inventes información. No respondas sobre otros temas. Sé breve, claro y amable en todas tus respuestas.
-            `,
+            content: `Eres un asistente virtual de la empresa Preding, especializada en venta de boletos para eventos musicales.\n\nEstos son los eventos disponibles actualmente:\n${resumenEventos}\n${contextoAdicional}\n\n
+            Cuando te saluden responde hamablemente y usa emojis cuando sea útil, explica que estas para resolver dudas e informar sobre los eventos disponibles.
+            Si te piden información de los eventos, dale una lista con el nombre de los eventos (El compo "title"), y ofrece la opción de dar más informacion de un evento en particular, al preguntarte de ese evento, da toda la información que poseas de el.            
+            `
           },
-          { role: "user", content: userMessage },
-        ],
-      }),
+          {
+            role: "user",
+            content: userMessage,
+          }
+        ]
+      })
     });
 
     const aiJson = await aiResponse.json();
+    const replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
-    // Validación robusta
-    if (!aiJson.choices || !aiJson.choices[0]?.message?.content) {
-      console.error("❌ Error en respuesta de OpenRouter:", aiJson);
-      return res.status(200).end();
-    }
-
-    const replyText = aiJson.choices[0].message.content;
-
-    // 📤 Respuesta por WhatsApp
-    const whatsappRes = await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+    await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${META_ACCESS_TOKEN}`,
+        Authorization: `Bearer ${META_ACCESS_TOKEN}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -100,14 +96,11 @@ No inventes información. No respondas sobre otros temas. Sé breve, claro y ama
           preview_url: false,
           body: replyText,
         },
-      }),
+      })
     });
-
-    const whatsappJson = await whatsappRes.json();
-    console.log("✅ Respuesta enviada a WhatsApp:", whatsappJson);
 
     return res.status(200).end();
   }
 
   res.status(405).end();
-}
+} 
