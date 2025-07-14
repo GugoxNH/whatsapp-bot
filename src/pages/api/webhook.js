@@ -1,5 +1,3 @@
-// ✅ Webhook para Preding con extracción de intención + respuesta precisa desde API
-
 const processedMessages = new Set();
 setInterval(() => processedMessages.clear(), 1000 * 60 * 5);
 
@@ -41,8 +39,38 @@ export default async function handler(req, res) {
     if (processedMessages.has(messageId)) return res.status(200).end();
     processedMessages.add(messageId);
 
-    // 🔍 Paso 1: interpretar intención del usuario con IA
-    const aiIntentRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    // 1. Obtener eventos de la API
+    const eventsRes = await fetch("https://smarticket.pagaboletos.com/wp-json/whatsapp-api/v1/products");
+    const eventos = await eventsRes.json();
+
+    // 2. Preparar lista compacta
+    const resumenEventos = eventos.map((e, i) => `${i + 1}. ${e.title}`).join("\n");
+
+    // 3. Ver si el usuario pidió la lista
+    const pideLista = /lista|eventos|todos/i.test(userMessage);
+
+    // 4. Buscar si menciona algún evento específico
+    const eventoMencionado = eventos.find(e =>
+      userMessage.toLowerCase().includes(
+        e.title.toLowerCase().split(" ")[0] // toma primera palabra del título
+      )
+    );
+
+    let contexto = `Eres un asistente virtual de Preding, una empresa que vende boletos para eventos musicales.\n\n`;
+
+    if (pideLista) {
+      contexto += `Aquí tienes la lista completa de eventos disponibles:\n${resumenEventos}\n\nResponde en español de manera clara y amable.`;
+    } else if (eventoMencionado) {
+      const zonas = eventoMencionado.variations
+        .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
+        .join("\n");
+
+      contexto += `Detalles del evento "${eventoMencionado.title}":\n${zonas}\n\nLink para compra: ${eventoMencionado.link}\n\nResponde de forma clara y en español.`;
+    } else {
+      contexto += `El usuario preguntó: "${userMessage}". Si no sabes la respuesta, indícale que puedes mostrarle la lista de eventos disponibles o que consulte con un asesor.`;
+    }
+
+    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${OPENROUTER_API_KEY}`,
@@ -53,7 +81,7 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: `Tu tarea es identificar a qué evento y zona se refiere el usuario. Devuelve un JSON con dos campos: "evento" y "zona". Si no lo menciona, deja esos campos vacíos.`
+            content: contexto
           },
           {
             role: "user",
@@ -63,47 +91,9 @@ export default async function handler(req, res) {
       })
     });
 
-    const parsed = await aiIntentRes.json();
-    const content = parsed.choices?.[0]?.message?.content;
+    const aiJson = await aiResponse.json();
+    const replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
-    let eventoBuscado = "";
-    let zonaBuscada = "";
-    try {
-      const resultado = JSON.parse(content);
-      eventoBuscado = resultado.evento?.toLowerCase() || "";
-      zonaBuscada = resultado.zona?.toLowerCase() || "";
-    } catch (e) {
-      console.warn("❌ No se pudo interpretar la intención del usuario." + e.message);
-    }
-
-    // 🎟️ Paso 2: consultar API real
-    const eventos = await fetch("https://smarticket.pagaboletos.com/wp-json/whatsapp-api/v1/products")
-      .then(res => res.json());
-
-    const coincidencia = eventos.find(e =>
-      eventoBuscado && e.title.toLowerCase().includes(eventoBuscado)
-    );
-
-    let respuesta = "Lo siento, no encontré información sobre ese evento.";
-
-    if (coincidencia) {
-      respuesta = `🎟️ *${coincidencia.title}*\n`;
-
-      const zona = coincidencia.variations.find(v =>
-        zonaBuscada && v.attributes["attribute_zonas"].toLowerCase().includes(zonaBuscada)
-      );
-
-      if (zona) {
-        respuesta += `🔹 Zona: ${zona.attributes["attribute_zonas"]}\n💵 Precio: $${zona.regular_price} MXN\n`;
-      } else {
-        respuesta += `📍 Zonas disponibles:\n`;
-        respuesta += coincidencia.variations.map(v => `- ${v.attributes["attribute_zonas"]}: $${v.regular_price} MXN`).join("\n");
-      }
-
-      respuesta += `\n\n🔗 Compra aquí: ${coincidencia.link}`;
-    }
-
-    // 📤 Enviar respuesta a WhatsApp
     await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
       headers: {
@@ -116,7 +106,7 @@ export default async function handler(req, res) {
         type: "text",
         text: {
           preview_url: false,
-          body: respuesta,
+          body: replyText,
         },
       })
     });
