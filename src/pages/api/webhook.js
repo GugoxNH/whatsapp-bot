@@ -1,88 +1,118 @@
-export default async function handler(req, res) {
-  if (req.method === "GET") {
-    if (req.query["hub.verify_token"] === "HolaNovato") {
-      return res.status(200).send(req.query["hub.challenge"]);
-    } else {
-      return res.status(403).send("Error de autentificación.");
-    }
-  }
+const processedMessages = new Set();
+setInterval(() => processedMessages.clear(), 1000 * 60 * 5);
 
-  if (req.method === "POST") {
-    const body = req.body;
-
-    if (!body?.entry?.[0]?.changes?.[0]?.value?.messages) {
-      return res.status(200).send("No message");
-    }
-
-    const message = body.entry[0].changes[0].value.messages[0];
-    const phoneNumber = message.from;
-    const text = message.text?.body?.toLowerCase() || "";
-
-    // Obtener eventos desde tu API externa
-    const response = await fetch("https://smarticket.pagaboletos.com/wp-json/whatsapp-api/v1/products");
-    const events = await response.json();
-
-    let reply = "";
-
-    if (text.includes("lista") || text.includes("eventos")) {
-      reply = "🎶 *Eventos disponibles:*\n\n" + events.map((e, i) => `${i + 1}. ${e.title}`).join("\n");
-      reply += `\n\n📝 Puedes pedir más información escribiendo por ejemplo: *evento 2* o *quiero info del evento de Pesado*`;
-    } else if (text.match(/^evento\s*\d+/)) {
-      const match = text.match(/^evento\s*(\d+)/);
-      const index = parseInt(match[1]) - 1;
-      const event = events[index];
-      if (event) {
-        reply = formatEventDetails(event);
-      } else {
-        reply = "❌ No encontré ese número de evento.";
-      }
-    } else {
-      const matchedEvent = events.find(e =>
-        text.includes(e.title.toLowerCase().split(" - ")[0].trim())
-      );
-
-      if (matchedEvent) {
-        reply = formatEventDetails(matchedEvent);
-      } else {
-        reply = "👋 ¡Hola! Soy el asistente virtual de *PREDING*. Puedo ayudarte a conocer los eventos musicales disponibles en San Luis Potosí.\n\n✉️ Puedes escribirme:\n- *Lista de eventos*\n- *Evento 1*\n- *Información de Junior H*\n\n¿Con qué te gustaría comenzar?";
-      }
-    }
-
-    await sendWhatsAppMessage(phoneNumber, reply);
-    return res.status(200).send("OK");
-  }
-
-  return res.status(405).send("Método no permitido.");
-}
-
-// Enviar respuesta por WhatsApp (ajusta con tu token correcto)
-async function sendWhatsAppMessage(to, message) {
-  const token = process.env.WHATSAPP_TOKEN;
-
-  await fetch("https://graph.facebook.com/v18.0/YOUR_PHONE_NUMBER_ID/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '1mb',
     },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      text: { body: message },
-    }),
-  });
-}
+  },
+};
 
-// Formatea los detalles del evento
-function formatEventDetails(event) {
-  let msg = `🎟️ *${event.title}*\n\n`;
-  msg += `🔗 [Página del evento](${event.link})\n\n`;
-  msg += `💰 *Precios disponibles:*\n`;
+export default async function handler(req, res) {
+  const VERIFY_TOKEN = process.env.VERIFY_TOKEN;
+  const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+  const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
+  const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
+  const MODEL_NAME = process.env.MODEL_NAME || "deepseek/deepseek-r1-0528-qwen3-8b";
 
-  event.variations.forEach(v => {
-    msg += `- ${v.attributes["attribute_zonas"]}\n`;
-  });
+  if (req.method === 'GET') {
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
 
-  msg += `\n¿Necesitas ayuda para comprar tus boletos o tienes otra duda?`;
-  return msg;
+    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+      return res.status(200).send(challenge);
+    } else {
+      return res.status(403).end();
+    }
+  }
+
+  if (req.method === 'POST') {
+    const body = req.body;
+    const messageObj = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+    const userMessage = messageObj?.text?.body;
+    const senderNumber = messageObj?.from;
+    const messageId = messageObj?.id;
+
+    if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
+    if (processedMessages.has(messageId)) return res.status(200).end();
+    processedMessages.add(messageId);
+
+    // 1. Obtener eventos de la API
+    const eventsRes = await fetch("https://smarticket.pagaboletos.com/wp-json/whatsapp-api/v1/products");
+    const eventos = await eventsRes.json();
+
+    // 2. Preparar lista compacta
+    const resumenEventos = eventos.map((e, i) => `${i + 1}. ${e.title}`).join("\n");
+
+    // 3. Ver si el usuario pidió la lista
+    const pideLista = /lista|eventos|todos/i.test(userMessage);
+
+    // 4. Buscar si menciona algún evento específico
+    const eventoMencionado = eventos.find(e =>
+      userMessage.toLowerCase().includes(
+        e.title.toLowerCase().split(" ")[0] // toma primera palabra del título
+      )
+    );
+
+    let contexto = `Eres un asistente virtual de Preding, una empresa que vende boletos para eventos musicales.\n\n`;
+
+    if (pideLista) {
+      contexto += `Aquí tienes la lista completa de eventos disponibles:\n${resumenEventos}\n\nResponde en español de manera clara y amable.`;
+    } else if (eventoMencionado) {
+      const zonas = eventoMencionado.variations
+        .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
+        .join("\n");
+
+      contexto += `Detalles del evento "${eventoMencionado.title}":\n${zonas}\n\nLink para compra: ${eventoMencionado.link}\n\nResponde de forma clara y en español.`;
+    } else {
+      contexto += `El usuario preguntó: "${userMessage}". Si no sabes la respuesta, indícale que puedes mostrarle la lista de eventos disponibles o que consulte con un asesor.`;
+    }
+
+    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MODEL_NAME,
+        messages: [
+          {
+            role: "system",
+            content: contexto
+          },
+          {
+            role: "user",
+            content: userMessage,
+          }
+        ]
+      })
+    });
+
+    const aiJson = await aiResponse.json();
+    const replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
+
+    await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: senderNumber,
+        type: "text",
+        text: {
+          preview_url: false,
+          body: replyText,
+        },
+      })
+    });
+
+    return res.status(200).end();
+  }
+
+  res.status(405).end();
 }
