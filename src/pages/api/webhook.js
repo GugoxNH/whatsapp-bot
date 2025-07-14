@@ -44,7 +44,7 @@ export default async function handler(req, res) {
     const eventos = await eventsRes.json();
 
     // 1. Compactar lista de títulos
-    const resumenEventos = eventos.map(e => `- ${e.title}`).join("\n");
+    const resumenEventos = eventos.map((e, i) => `${i + 1}. ${e.title}`).join('\n');
 
     // 2. Buscar si el usuario menciona un evento
     const eventoMencionado = eventos.find(e => userMessage.toLowerCase().includes(e.title.toLowerCase().slice(0, 15)));
@@ -66,9 +66,8 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: `Eres un asistente virtual de la empresa Preding, especializada en venta de boletos para eventos musicales.\n\nEstos son los eventos disponibles actualmente:\n${resumenEventos}\n${contextoAdicional}\n\n
-            Cuando te saluden responde hamablemente y usa emojis cuando sea útil, explica que estas para resolver dudas e informar sobre los eventos disponibles.
-            Si te piden información de los eventos, dale una lista con el nombre de los eventos (El compo "title"), y ofrece la opción de dar más informacion de un evento en particular, al preguntarte de ese evento, da toda la información que poseas de el.            
+            content: `Eres un asistente virtual de la empresa Preding, especializada en venta de boletos para eventos.\n\nA continuación tienes la lista exacta y completa de los eventos disponibles. No la modifiques, no la interpretes, y no inventes nombres o correcciones. Solo debes mostrarla cuando el usuario la pida:\n\n:\n${resumenEventos}\n${contextoAdicional}\n\n
+            Cuando te saluden responde hamablemente y usa emojis cuando sea útil, responde todo en español, formal y sin faltas de ortográfica.            
             `
           },
           {
