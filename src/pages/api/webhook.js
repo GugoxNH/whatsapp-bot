@@ -73,7 +73,7 @@ export default async function handler(req, res) {
       eventoBuscado = resultado.evento?.toLowerCase() || "";
       zonaBuscada = resultado.zona?.toLowerCase() || "";
     } catch (e) {
-      console.warn("❌ No se pudo interpretar la intención del usuario.");
+      console.warn("❌ No se pudo interpretar la intención del usuario." + e.message);
     }
 
     // 🎟️ Paso 2: consultar API real
