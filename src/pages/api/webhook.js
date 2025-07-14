@@ -66,6 +66,8 @@ export default async function handler(req, res) {
 
     if (pideLista) {
       contexto += `Estos son los eventos disponibles:\n${listaEventos}\n\nResponde en español y dile al usuario que si quiere más información escriba el número del evento.`;
+      console.log("Entro 0: " , pideLista, )
+
     } else if (eventoPorNumero || eventoPorNombre) {
       const evento = eventoPorNumero || eventoPorNombre;
       const zonas = evento.variations
@@ -73,8 +75,10 @@ export default async function handler(req, res) {
         .join("\n");
 
       contexto += `Este es el detalle del evento "${evento.title}":\n${zonas}\n\nPágina para comprar: ${evento.link}\n\nResponde de forma clara en español.`;    
+      console.log("Entro 1: " , evento, )
     } else {
       contexto += `El usuario escribió: "${userMessage}". Si no entiendes, dile amablemente que puede pedir la lista de eventos o escribir el número del evento para más detalles.`;
+      console.log("Entro 2: ")
     }
 
     // 7. Enviar a OpenRouter
