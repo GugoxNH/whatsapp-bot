@@ -106,7 +106,7 @@ export default async function handler(req, res) {
       body: JSON.stringify(responsePayload),
     });
 
-    res.sendStatus(200);
+    res.sendStatus(200).send(reply);;
   } catch (e) {
     console.error("❌ Error en webhook:", e.message);
     res.status(500).send("Error interno.");
