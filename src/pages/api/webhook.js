@@ -57,9 +57,9 @@ export default async function handler(req, res) {
     const eventoPorNumero = eventos[index];
 
     // 5. Buscar por coincidencia en título (por palabras clave)
-    const eventoPorNombre = eventos.find((e) =>
+/*     const eventoPorNombre = eventos.find((e) =>
       userMessage.toLowerCase().includes(e.title.toLowerCase().split(" ")[0])
-    );
+    ); */
 
     // 6. Preparar contexto
     let contexto = `Eres un asistente virtual de Preding, una empresa que vende boletos para eventos musicales en San Luis Potosí.\n\n`;
@@ -68,13 +68,13 @@ export default async function handler(req, res) {
       contexto += `Estos son los eventos disponibles:\n${listaEventos}\n\nResponde en español y dile al usuario que si quiere más información escriba el número del evento.`;
       console.log("Entro 0: " , pideLista, )
 
-    } else if (eventoPorNumero || eventoPorNombre) {
-      const evento = eventoPorNumero || eventoPorNombre;
+    } else if (eventoPorNumero) {
+      const evento = eventoPorNumero;
       const zonas = evento.variations
         .map((v) => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
         .join("\n");
 
-      contexto += `Este es el detalle del evento "${evento.title}":\n${zonas}\n\nPágina para comprar: ${evento.link}\n\nResponde de forma clara en español.`;    
+      contexto += `Este es el detalle del evento "${evento.title}":\n${zonas}\n\nPágina para comprar: ${evento.link}\n\nResponde de forma clara en español. Al recibir el número, dale toda la información del evento al usuario.`;    
       console.log("Entro 1: " , evento, )
     } else {
       contexto += `El usuario escribió: "${userMessage}". Si no entiendes, dile amablemente que puede pedir la lista de eventos o escribir el número del evento para más detalles.`;
