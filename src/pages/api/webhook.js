@@ -39,49 +39,42 @@ export default async function handler(req, res) {
     if (processedMessages.has(messageId)) return res.status(200).end();
     processedMessages.add(messageId);
 
-    // 1. Obtener eventos
+    // 1. Obtener todos los eventos desde la API
     const response = await fetch("https://smarticket.pagaboletos.com/wp-json/whatsapp-api/v1/products");
     const eventos = await response.json();
 
-    // 2. Crear lista numerada
-    const listaEventos = eventos
-      .map((e, i) => `${i + 1}. ${e.title}`)
-      .join("\n");
-
-    // 3. Detectar si pidió la lista
-    const pideLista = /lista|eventos|cartelera|ver todos/i.test(userMessage);
-
-    // 4. Buscar por número
-    const matchNumero = userMessage.match(/\b(?:evento )?(\d{1,2})\b/i);
-    const index = matchNumero ? parseInt(matchNumero[1]) - 1 : -1;
-    const eventoPorNumero = eventos[index];
-
-    // 5. Buscar por coincidencia en título (por palabras clave)
-/*     const eventoPorNombre = eventos.find((e) =>
-      userMessage.toLowerCase().includes(e.title.toLowerCase().split(" ")[0])
-    ); */
-
-    // 6. Preparar contexto
-    let contexto = `Eres un asistente virtual de Preding, una empresa que vende boletos para eventos musicales en San Luis Potosí.\n\n`;
-
-    if (pideLista) {
-      contexto += `Estos son los eventos disponibles:\n${listaEventos}\n\nResponde en español y dile al usuario que si quiere más información escriba el número del evento.`;
-      console.log("Entro 0: " , pideLista, )
-
-    } else if (eventoPorNumero) {
-      const evento = eventoPorNumero;
-      const zonas = evento.variations
-        .map((v) => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
+    // 2. Convertir eventos a texto amigable
+    const eventosTexto = eventos.map((e, i) => {
+      const zonas = e.variations
+        .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
         .join("\n");
 
-      contexto += `Este es el detalle del evento "${evento.title}":\n${zonas}\n\nPágina para comprar: ${evento.link}\n\nResponde de forma clara en español. Al recibir el número, dale toda la información del evento al usuario.`;    
-      console.log("Entro 1: " , evento, )
-    } else {
-      contexto += `El usuario escribió: "${userMessage}". Si no entiendes, dile amablemente que puede pedir la lista de eventos o escribir el número del evento para más detalles.`;
-      console.log("Entro 2: ")
-    }
+      return `Evento ${i + 1}:
+Título: ${e.title}
+Link: ${e.link}
+Zonas:
+${zonas}
+`;
+    }).join("\n");
 
-    // 7. Enviar a OpenRouter
+    // 3. Crear contexto completo para IA
+    const contexto = `
+Eres un asistente de la boletera *Preding*. Tu trabajo es ayudar a los usuarios a encontrar eventos musicales disponibles y guiarlos con información útil.
+
+Aquí está la lista completa de eventos disponibles con todos los detalles:
+
+${eventosTexto}
+
+Reglas:
+- Solo responde preguntas relacionadas con estos eventos.
+- Si el usuario quiere ver la lista, muéstrasela con los títulos numerados.
+- Si el usuario pregunta por un número de evento, devuélvele el link y los precios.
+- Si el usuario escribe algo fuera de tema, pídele que solicite la lista o escriba el número del evento.
+- No inventes datos, responde siempre con la información proporcionada aquí.
+- Sé amable y breve.
+`;
+
+    // 4. Llamada a OpenRouter
     const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -100,7 +93,7 @@ export default async function handler(req, res) {
     const aiJson = await aiResponse.json();
     const replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
-    // 8. Enviar a WhatsApp
+    // 5. Enviar respuesta por WhatsApp
     await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
       headers: {
