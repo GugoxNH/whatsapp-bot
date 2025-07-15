@@ -93,6 +93,47 @@ Reglas:
     const aiJson = await aiResponse.json();
     const replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
+    if (replyText.toLowerCase().includes("asesor") || replyText.includes("humano")) {
+      const contactoPayload = {
+        messaging_product: "whatsapp",
+        to: senderNumber,
+        type: "contacts",
+        contacts: [
+          {
+            name: {
+              formatted_name: "Raúl",
+              first_name: "Acosta",
+              last_name: ""
+            },
+            org: {
+              company: "Preding",
+              title: "Asesor de ventas"
+            },
+            phones: [
+              {
+                phone: "+524111541592", // Número con lada internacional
+                type: "Mobile",
+                wa_id: "524111541592"
+              }
+            ]
+          }
+        ]
+      };
+
+      await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(contactoPayload)
+      });
+
+      return res.status(200).end();
+    }
+
+
+
     // 5. Enviar respuesta por WhatsApp
     await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
