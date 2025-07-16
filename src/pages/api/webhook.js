@@ -111,9 +111,9 @@ Reglas:
             },
             phones: [
               {
-                phone: "+524111541592", // Número con lada internacional
+                phone: "+5214111541592", // Número con lada internacional
                 type: "Mobile",
-                wa_id: "524111541592"
+                wa_id: "5214111541592"
               }
             ]
           }
