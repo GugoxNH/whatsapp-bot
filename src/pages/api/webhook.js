@@ -59,7 +59,7 @@ ${zonas}
 
     // 3. Crear contexto completo para IA
     const contexto = `
-Eres un asistente de la boletera *Preding*. Tu trabajo es ayudar a los usuarios a encontrar eventos musicales disponibles y guiarlos con información útil.
+Eres un asistente de la boletera *Preding*. Tu trabajo es ayudar a los usuarios a encontrar eventos disponibles y guiarlos con información útil.
 
 Aquí está la lista completa de eventos disponibles con todos los detalles:
 
@@ -71,6 +71,8 @@ Reglas:
 - Si el usuario pregunta por un número de evento, devuélvele el link y los precios.
 - Si el usuario escribe algo fuera de tema, pídele que solicite la lista o escriba el número del evento.
 - No inventes datos, responde siempre con la información proporcionada aquí.
+- No asumas la ubicación del usuario.
+- Si el usuario pide información muy especifica o algo con el que no puedas ayudarlo, sugiere que pida ayuda a un "asesor" (que lo escriba en el chat) y que le proporcionaras el número.
 - Sé amable y breve.
 `;
 
@@ -93,47 +95,6 @@ Reglas:
     const aiJson = await aiResponse.json();
     const replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
-    if (replyText.toLowerCase().includes("asesor") || replyText.includes("humano")) {
-      const contactoPayload = {
-        messaging_product: "whatsapp",
-        to: senderNumber,
-        type: "contacts",
-        contacts: [
-          {
-            name: {
-              formatted_name: "Raúl",
-              first_name: "Acosta",
-              last_name: ""
-            },
-            org: {
-              company: "Preding",
-              title: "Asesor de ventas"
-            },
-            phones: [
-              {
-                phone: "+5214111541592", // Número con lada internacional
-                type: "Mobile",
-                wa_id: "5214111541592"
-              }
-            ]
-          }
-        ]
-      };
-
-      await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(contactoPayload)
-      });
-
-      return res.status(200).end();
-    }
-
-
-
     // 5. Enviar respuesta por WhatsApp
     await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
@@ -152,8 +113,50 @@ Reglas:
       }),
     });
 
+  }
+
+  if (replyText.toLowerCase().includes("asesor") || replyText.includes("humano")) {
+    const contactoPayload = {
+      messaging_product: "whatsapp",
+      to: senderNumber,
+      type: "contacts",
+      contacts: [
+        {
+          name: {
+            formatted_name: "Raúl",
+            first_name: "Acosta",
+            last_name: ""
+          },
+          org: {
+            company: "Preding",
+            title: "Asesor de ventas"
+          },
+          phones: [
+            {
+              phone: "+5214111541592",
+              type: "Mobile",
+              wa_id: "5214111541592"
+            }
+          ]
+        }
+      ]
+    };
+
+    await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(contactoPayload)
+    });
+
     return res.status(200).end();
   }
+
+
+
+
 
   return res.status(405).end();
 }
