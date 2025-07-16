@@ -35,6 +35,8 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
+    console.log("Numero: ", senderNumber)
+
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
     processedMessages.add(messageId);
