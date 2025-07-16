@@ -66,15 +66,13 @@ Aquí está la lista completa de eventos disponibles con todos los detalles:
 ${eventosTexto}
 
 Reglas:
-- Cuando te saluden (Con un hola, buenas, ¿Como estas?, etc), devuelve el saludo e indicale al usuario todas las funciones, asi como que le puedes proporcionar el número de un asesor.
 - Solo responde preguntas relacionadas con estos eventos.
-- Responde siempre en un español formal y bien escrito.
 - Si el usuario quiere ver la lista, muéstrasela con los títulos numerados.
 - Si el usuario pregunta por un número de evento, devuélvele el link y los precios.
 - Si el usuario escribe algo fuera de tema, pídele que solicite la lista o escriba el número del evento.
 - No inventes datos, responde siempre con la información proporcionada aquí.
 - No asumas la ubicación del usuario.
-- Si el usuario pide información muy especifica o algo con el que no puedas ayudarlo, sugiere que pida ayuda a un "asesor" (que lo escriba en el chat) y que le proporcionaras el número.
+- Si el usuario pide información muy especifica o algo con el que no puedas ayudarlo, sugiere que pida ayuda a un "asesor" y que le proporcionaras el número.
 - Sé amable y breve.
 `;
 
@@ -115,7 +113,7 @@ Reglas:
             },
             phones: [
               {
-                phone: "+5214111541592", 
+                phone: "+5214111541592", // Número con lada internacional
                 type: "Mobile",
                 wa_id: "5214111541592"
               }
@@ -155,7 +153,8 @@ Reglas:
         },
       }),
     });
-    
+
+    return res.status(200).end();
   }
 
   return res.status(405).end();
