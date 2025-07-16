@@ -149,7 +149,6 @@ if (!isNaN(numeroEvento) && numeroEvento > 0 && numeroEvento <= eventos.length) 
   const evento = eventos[numeroEvento - 1];
   const titulo = evento.title;
   const url = evento.link;
-  const imagen = evento.image;
 
   const zonasTexto = evento.variations
     .map(v => {
@@ -175,7 +174,7 @@ if (!isNaN(numeroEvento) && numeroEvento > 0 && numeroEvento <= eventos.length) 
           parameters: [
             {
               type: "image",
-              image: { link: imagen }
+              image: { link: image }
             }
           ]
         },
