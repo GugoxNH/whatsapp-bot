@@ -73,7 +73,7 @@ ${eventosTexto}
 
 Reglas:
 - Solo responde preguntas relacionadas con estos eventos y ofrece hablar con un asesor en caso de una petición diferente.
-- Si el usuario quiere ver la lista, muéstrasela con los títulos numerados y el link del evento, has un salto de linea entre cada evento.
+- Si el usuario quiere ver la lista, muéstrasela con los títulos numerados y el link del evento solamente, has un salto de linea entre cada evento.
 - Si el usuario pregunta por un número de evento, devuélvele el link y los precios.
 - Si el usuario escribe algo fuera de tema, pídele que solicite la lista o escriba el número del evento.
 - No inventes datos, responde siempre con la información proporcionada aquí.
@@ -103,7 +103,7 @@ Reglas:
 
     console.log("Res: ", replyText)
 
-    if (replyText.toLowerCase().includes("asexcdsbciuwvcdsisor")) {
+    if (replyText.toLowerCase().includes("asesor") || replyText.toLowerCase().includes("humano")) {
       const contactoPayload = {
         messaging_product: "whatsapp",
         to: senderNumber,
