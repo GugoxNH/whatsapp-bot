@@ -97,8 +97,6 @@ Reglas:
     const aiJson = await aiResponse.json();
     const replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
-
-
     if (replyText.toLowerCase().includes("asesor") || replyText.includes("humano")) {
       const contactoPayload = {
         messaging_product: "whatsapp",
@@ -117,7 +115,7 @@ Reglas:
             },
             phones: [
               {
-                phone: "+5214111541592",
+                phone: "+5214111541592", 
                 type: "Mobile",
                 wa_id: "5214111541592"
               }
@@ -138,6 +136,8 @@ Reglas:
       return res.status(200).end();
     }
 
+
+
     // 5. Enviar respuesta por WhatsApp
     await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
@@ -155,12 +155,8 @@ Reglas:
         },
       }),
     });
-    return res.status(200).end();
+    
   }
-
-
-
-
 
   return res.status(405).end();
 }
