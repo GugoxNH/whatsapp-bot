@@ -68,6 +68,7 @@ ${eventosTexto}
 Reglas:
 - Cuando te saluden (Con un hola, buenas, ¿Como estas?, etc), devuelve el saludo e indicale al usuario todas las funciones, asi como que le puedes proporcionar el número de un asesor.
 - Solo responde preguntas relacionadas con estos eventos.
+- Responde siempre en un español formal y bien escrito.
 - Si el usuario quiere ver la lista, muéstrasela con los títulos numerados.
 - Si el usuario pregunta por un número de evento, devuélvele el link y los precios.
 - Si el usuario escribe algo fuera de tema, pídele que solicite la lista o escriba el número del evento.
@@ -96,6 +97,47 @@ Reglas:
     const aiJson = await aiResponse.json();
     const replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
+
+
+    if (replyText.toLowerCase().includes("asesor") || replyText.includes("humano")) {
+      const contactoPayload = {
+        messaging_product: "whatsapp",
+        to: senderNumber,
+        type: "contacts",
+        contacts: [
+          {
+            name: {
+              formatted_name: "Raúl",
+              first_name: "Acosta",
+              last_name: ""
+            },
+            org: {
+              company: "Preding",
+              title: "Asesor de ventas"
+            },
+            phones: [
+              {
+                phone: "+5214111541592",
+                type: "Mobile",
+                wa_id: "5214111541592"
+              }
+            ]
+          }
+        ]
+      };
+
+      await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(contactoPayload)
+      });
+
+      return res.status(200).end();
+    }
+
     // 5. Enviar respuesta por WhatsApp
     await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
@@ -113,45 +155,6 @@ Reglas:
         },
       }),
     });
-
-  }
-
-  if (replyText.toLowerCase().includes("asesor") || replyText.includes("humano")) {
-    const contactoPayload = {
-      messaging_product: "whatsapp",
-      to: senderNumber,
-      type: "contacts",
-      contacts: [
-        {
-          name: {
-            formatted_name: "Raúl",
-            first_name: "Acosta",
-            last_name: ""
-          },
-          org: {
-            company: "Preding",
-            title: "Asesor de ventas"
-          },
-          phones: [
-            {
-              phone: "+5214111541592",
-              type: "Mobile",
-              wa_id: "5214111541592"
-            }
-          ]
-        }
-      ]
-    };
-
-    await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(contactoPayload)
-    });
-
     return res.status(200).end();
   }
 
