@@ -36,6 +36,7 @@ export default async function handler(req, res) {
     const messageId = messageObj?.id;
 
     console.log("Numero: ", senderNumber)
+    console.log("MessageID: ", messageId)
 
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
@@ -100,7 +101,9 @@ Reglas:
     const aiJson = await aiResponse.json();
     const replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
-    if (replyText.toLowerCase().includes("asesor") || replyText.includes("humano")) {
+    console.log("Res: ", replyText)
+
+    if (replyText.toLowerCase().includes("asexcdsbciuwvcdsisor")) {
       const contactoPayload = {
         messaging_product: "whatsapp",
         to: senderNumber,
