@@ -15,6 +15,7 @@ export default async function handler(req, res) {
   const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
   const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
   const MODEL_NAME = process.env.MODEL_NAME || "deepseek/deepseek-chat";
+  const image = "https://scontent.whatsapp.net/v/t61.29466-34/516681729_762393939513739_359846193843804191_n.png?ccb=1-7&_nc_sid=8b1bef&_nc_ohc=HM41kvQbT44Q7kNvwEz08wx&_nc_oc=AdlCN8_99S1s8Tjempk8d8-WzlcUb-OtB0OvPguZXsGBWkKnt7ZvaTZZIy8Um19ZDK-sjqa10EbfCp-bXsypDMzm&_nc_zt=3&_nc_ht=scontent.whatsapp.net&_nc_gid=xK_Q_MN9Qk5iqOc5W2gWOQ&oh=01_Q5Aa2AFtcD26DtGB_DTmmAnjiMwoSORVKWIHrTBbuvKXW3yIeg&oe=689EC6B2";
 
   if (req.method === "GET") {
     const mode = req.query["hub.mode"];
@@ -141,6 +142,74 @@ Reglas:
 
       return res.status(200).end();
     }
+
+    const numeroEvento = parseInt(userMessage?.match(/evento\s*(\d+)/i)?.[1]);
+
+if (!isNaN(numeroEvento) && numeroEvento > 0 && numeroEvento <= eventos.length) {
+  const evento = eventos[numeroEvento - 1];
+  const titulo = evento.title;
+  const url = evento.link;
+  const imagen = evento.image;
+
+  const zonasTexto = evento.variations
+    .map(v => {
+      const zona = v.attributes["attribute_zonas"]?.split("$")[0]?.trim();
+      const precio = parseFloat(v.regular_price).toLocaleString("es-MX", {
+        style: "currency",
+        currency: "MXN"
+      });
+      return `${zona}: ${precio}`;
+    })
+    .join(" - ");
+
+  const plantillaPayload = {
+    messaging_product: "whatsapp",
+    to: senderNumber,
+    type: "template",
+    template: {
+      name: "event_template",
+      language: { code: "es" },
+      components: [
+        {
+          type: "header",
+          parameters: [
+            {
+              type: "image",
+              image: { link: imagen }
+            }
+          ]
+        },
+        {
+          type: "body",
+          parameters: [
+            { type: "text", text: titulo },
+            { type: "text", text: zonasTexto }
+          ]
+        },
+        {
+          type: "button",
+          sub_type: "url",
+          index: "0",
+          parameters: [
+            { type: "text", text: url }
+          ]
+        }
+      ]
+    }
+  };
+
+  await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(plantillaPayload)
+  });
+
+  return res.status(200).end();
+}
+
 
 
 
