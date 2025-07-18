@@ -1,3 +1,6 @@
+import { setSesion, getSesion } from "../../lib/sesion.js"; // o "../lib/..." según tu estructura
+
+
 const processedMessages = new Set();
 setInterval(() => processedMessages.clear(), 1000 * 60 * 5);
 
@@ -35,6 +38,18 @@ export default async function handler(req, res) {
     const userMessage = messageObj?.text?.body;
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
+
+    setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
+
+    const sesion = getSesion(senderNumber);
+
+
+    if (sesion?.eventoIndex !== undefined) {
+  const evento = eventos[sesion.eventoIndex];
+  console.log("✅ Evento desde Redis:", evento.title);
+}
+
+
 
     console.log("Numero: ", senderNumber)
     console.log("MessageID: ", messageId)
@@ -97,7 +112,7 @@ Reglas:
       }),
     });
 
-    const sesiones = new Map(); // key: número de WhatsApp, value: { eventoIndex, timestamp }
+   /*  const sesiones = new Map(); // key: número de WhatsApp, value: { eventoIndex, timestamp }
 
     function setSesion(numero, data) {
       sesiones.set(numero, { ...data, timestamp: Date.now() });
@@ -113,8 +128,6 @@ Reglas:
       return sesion;
     }
     const sesion = getSesion(senderNumber);
-
-
 
     // Detectar si el mensaje menciona algún evento por nombre
     const mensajeUsuarioNormalizado = userMessage
@@ -185,8 +198,7 @@ Reglas:
           },
         }),
       });
-      // Ahora puedes usar: evento.title, evento.link, evento.image, etc.
-    }
+    } */
 
 
 
@@ -199,7 +211,7 @@ Estamos aquí para ayudarte con cualquier duda sobre tu compra, boletos, fechas 
 Por favor indícanos tu número de orden o el evento de tu interés.`;
 
     // Verificamos si la IA devolvió un saludo inicial
-    const saludoDetectado = /^hola|bienvenido|gracias por escribirnos|gracias por contactar/i.test(replyText);
+    const saludoDetectado = /(hola|bienvenido|gracias por escribirnos|gracias por contactar)/i.test(replyText);
 
     console.log("saludo: ", replyText);
     
