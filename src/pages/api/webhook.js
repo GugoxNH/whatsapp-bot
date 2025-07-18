@@ -35,8 +35,8 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-    console.log("Numero: ", senderNumber)
-    console.log("MessageID: ", messageId)
+/*     console.log("Numero: ", senderNumber)
+    console.log("MessageID: ", messageId) */
 
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
@@ -150,6 +150,7 @@ Reglas:
     if (sesion?.eventoIndex !== undefined) {
       const evento = eventos[sesion.eventoIndex];
       console.log("Index del evento seleccionado" + eventoIndex);
+      console.log("Evento: " + eventos[indexDetectado].title);
       // usa el evento: evento.title, evento.link, evento.image, etc.
     }
 
@@ -204,9 +205,6 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
           },
         }),
       });
-
-
-      console.log("Empezamos conversación ");
 
       return res.status(200).end();
 
