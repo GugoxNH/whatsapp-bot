@@ -136,28 +136,14 @@ Reglas:
       setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
     }
 
-
-    if (eventoIndexDetectado !== -1) {
-      console.log(`🎯 Evento detectado por nombre: ${eventos[eventoIndexDetectado].title}`);
-      setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
-    }
-
-    setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
-
-    const sesion = getSesion(senderNumber);
-
-
-    if (sesion?.eventoIndex !== undefined) {
-      const evento = eventos[sesion.eventoIndex];
-      console.log("✅ Evento desde Redis:", evento.title);
-    }
-
+    const sesion = await getSesion(senderNumber);
 
 
     if (sesion?.eventoIndex !== undefined) {
       const evento = eventos[sesion.eventoIndex];
       console.log("Index del evento seleccionado " + sesion.eventoIndex);
       console.log("Evento: ", evento);
+      console.log("✅ Evento desde Redis:", evento.title);
 
       const mes = `Elegiste el evento ${evento.title} ¿Cómo podemos ayudarte? Elige una opción:
 1️⃣ Ver precios y zonas  
