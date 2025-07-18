@@ -35,8 +35,8 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-/*     console.log("Numero: ", senderNumber)
-    console.log("MessageID: ", messageId) */
+    /*     console.log("Numero: ", senderNumber)
+        console.log("MessageID: ", messageId) */
 
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
@@ -113,15 +113,14 @@ Reglas:
       return sesion;
     }
 
-    // Normalizar el mensaje del usuario
+    // Detectar si el mensaje menciona algún evento por nombre
     const mensajeUsuarioNormalizado = userMessage
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^\w\s]/gi, ""); // quitar signos
 
-    // Intentar hacer match por nombre del evento
-    let indexDetectado = -1;
+    let eventoIndexDetectado = -1;
 
     eventos.forEach((evento, i) => {
       const tituloNormalizado = evento.title
@@ -130,29 +129,20 @@ Reglas:
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^\w\s]/gi, "");
 
-      // Dividir en palabras clave
+      // Contar cuántas palabras del título aparecen en el mensaje del usuario
       const palabras = tituloNormalizado.split(" ");
-      const coincidencias = palabras.filter(p => mensajeUsuarioNormalizado.includes(p));
+      const coincidencias = palabras.filter(palabra => mensajeUsuarioNormalizado.includes(palabra));
 
-      if (coincidencias.length >= 2 && indexDetectado === -1) {
-        indexDetectado = i;
+      if (coincidencias.length >= 2 && eventoIndexDetectado === -1) {
+        eventoIndexDetectado = i;
       }
     });
 
-    if (indexDetectado !== -1) {
-      console.log(`Usuario mencionó un evento: ${eventos[indexDetectado].title}`);
-      setSesion(senderNumber, { eventoIndex: indexDetectado });
+    if (eventoIndexDetectado !== -1) {
+      console.log(`🎯 Evento detectado por nombre: ${eventos[eventoIndexDetectado].title}`);
+      setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
     }
 
-
-    const sesion = getSesion(senderNumber);
-
-    if (sesion?.eventoIndex !== undefined) {
-      const evento = eventos[sesion.eventoIndex];
-      console.log("Index del evento seleccionado" + eventoIndex);
-      console.log("Evento: " + evento[indexDetectado].title);
-      // usa el evento: evento.title, evento.link, evento.image, etc.
-    }
 
 
 
