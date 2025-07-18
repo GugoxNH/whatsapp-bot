@@ -97,6 +97,65 @@ Reglas:
       }),
     });
 
+    const sesiones = new Map(); // key: número de WhatsApp, value: { eventoIndex, timestamp }
+
+    function setSesion(numero, data) {
+      sesiones.set(numero, { ...data, timestamp: Date.now() });
+    }
+
+    function getSesion(numero) {
+      const sesion = sesiones.get(numero);
+      if (!sesion) return null;
+      if (Date.now() - sesion.timestamp > 1000 * 60 * 15) {
+        sesiones.delete(numero);
+        return null;
+      }
+      return sesion;
+    }
+
+    // Normalizar el mensaje del usuario
+    const mensajeUsuarioNormalizado = userMessage
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^\w\s]/gi, ""); // quitar signos
+
+    // Intentar hacer match por nombre del evento
+    let indexDetectado = -1;
+
+    eventos.forEach((evento, i) => {
+      const tituloNormalizado = evento.title
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\w\s]/gi, "");
+
+      // Dividir en palabras clave
+      const palabras = tituloNormalizado.split(" ");
+      const coincidencias = palabras.filter(p => mensajeUsuarioNormalizado.includes(p));
+
+      if (coincidencias.length >= 2 && indexDetectado === -1) {
+        indexDetectado = i;
+      }
+    });
+
+    if (indexDetectado !== -1) {
+      console.log(`Usuario mencionó un evento: ${eventos[indexDetectado].title}`);
+      setSesion(senderNumber, { eventoIndex: indexDetectado });
+    }
+
+
+    const sesion = getSesion(senderNumber);
+
+    if (sesion?.eventoIndex !== undefined) {
+      const evento = eventos[sesion.eventoIndex];
+      console.log("Index del evento seleccionado" + eventoIndex);
+      // usa el evento: evento.title, evento.link, evento.image, etc.
+    }
+
+
+
+
     const aiJson = await aiResponse.json();
     let replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
@@ -146,7 +205,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
         }),
       });
 
-      
+
       console.log("Empezamos conversación ");
 
       return res.status(200).end();
@@ -192,17 +251,6 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       return res.status(200).end();
     }
 
-    //const numeroEvento = parseInt(userMessage?.match(/evento\s*(\d+)/i)?.[1]);
-
-    if (1000 == 5000) {
-
-      return res.status(200).end();
-    }
-
-
-
-
-    // 5. Enviar respuesta por WhatsApp
     await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
       headers: {
@@ -222,6 +270,5 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
 
     return res.status(200).end();
   }
-
   return res.status(405).end();
 }
