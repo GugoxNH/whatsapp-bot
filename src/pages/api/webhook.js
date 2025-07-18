@@ -192,7 +192,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       return res.status(200).end();
     }
 
-    const numeroEvento = parseInt(userMessage?.match(/evento\s*(\d+)/i)?.[1]);
+    //const numeroEvento = parseInt(userMessage?.match(/evento\s*(\d+)/i)?.[1]);
 
     if (1000 == 5000) {
 
