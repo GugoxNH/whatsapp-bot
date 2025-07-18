@@ -143,6 +143,14 @@ Reglas:
       setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
     }
 
+    const sesion = getSesion(senderNumber);
+
+    if (sesion?.eventoIndex !== undefined) {
+      const evento = eventos[sesion.eventoIndex];
+      console.log("Index del evento seleccionado" + eventoIndex);
+      console.log("Evento: " + evento[eventoIndex].title);
+      // Ahora puedes usar: evento.title, evento.link, evento.image, etc.
+    }
 
 
 
