@@ -120,23 +120,29 @@ Reglas:
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^\w\s]/gi, ""); // quitar signos
 
+
     let eventoIndexDetectado = -1;
 
-    eventos.forEach((evento, i) => {
+    eventos.forEach((evento, index) => {
       const tituloNormalizado = evento.title
         .toLowerCase()
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
         .replace(/[^\w\s]/gi, "");
 
-      // Contar cuántas palabras del título aparecen en el mensaje del usuario
-      const palabras = tituloNormalizado.split(" ");
-      const coincidencias = palabras.filter(palabra => mensajeUsuarioNormalizado.includes(palabra));
-
-      if (coincidencias.length >= 2 && eventoIndexDetectado === -1) {
-        eventoIndexDetectado = i;
+      if (
+        tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
+        mensajeUsuarioNormalizado.includes(tituloNormalizado)
+      ) {
+        eventoIndexDetectado = index;        
       }
     });
+
+    if (eventoIndexDetectado !== -1) {
+      console.log(`🎯 Evento detectado: ${eventos[eventoIndexDetectado].title}`);
+      setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
+    }
+
 
     if (eventoIndexDetectado !== -1) {
       console.log(`🎯 Evento detectado por nombre: ${eventos[eventoIndexDetectado].title}`);
@@ -147,8 +153,8 @@ Reglas:
 
     if (sesion?.eventoIndex !== undefined) {
       const evento = eventos[sesion.eventoIndex];
-      console.log("Index del evento seleccionado" + sesion.eventoIndex);
-      console.log("Evento: " , evento);
+      console.log("Index del evento seleccionado " + sesion.eventoIndex);
+      console.log("Evento: ", evento);
       // Ahora puedes usar: evento.title, evento.link, evento.image, etc.
     }
 
