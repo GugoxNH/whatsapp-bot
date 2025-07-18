@@ -21,6 +21,7 @@ export default async function handler(req, res) {
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
 
+
     if (mode === "subscribe" && token === VERIFY_TOKEN) {
       return res.status(200).send(challenge);
     } else {
@@ -35,8 +36,28 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-        console.log("Numero: ", senderNumber)
-        console.log("MessageID: ", messageId)
+    const sesiones = new Map(); // key: número de WhatsApp, value: { eventoIndex, timestamp }
+
+    function setSesion(numero, data) {
+      sesiones.set(numero, { ...data, timestamp: Date.now() });
+    }
+
+    function getSesion(numero) {
+      const sesion = sesiones.get(numero);
+      if (!sesion) return null;
+      if (Date.now() - sesion.timestamp > 1000 * 60 * 15) {
+        sesiones.delete(numero);
+        return null;
+      }
+      return sesion;
+    }
+    const sesion = getSesion(senderNumber);
+
+
+
+
+    console.log("Numero: ", senderNumber)
+    console.log("MessageID: ", messageId)
 
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
@@ -59,6 +80,24 @@ Zonas:
 ${zonas}
 `;
     }).join("\n");
+    let eventoselect = "";
+    if (sesion?.eventoIndex !== undefined) {
+      const evento = eventos[sesion.eventoIndex];
+      eventoselect = evento.map((e, i) => {
+        const zonas = e.variations
+          .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
+          .join("\n");
+
+        return `El evento que selecciono el cliente es:
+Título: ${e.title}
+Link: ${e.link}
+Zonas:
+${zonas}
+`;
+      }).join("\n");
+    }
+
+    console.log("Eventsel: " ,eventoselect);
 
     // 3. Crear contexto completo para IA
     const contexto = `
@@ -68,9 +107,10 @@ Al recibir un saludo, responde con un saludo.
 Aquí está la lista completa de eventos disponibles con todos los detalles:
 
 ${eventosTexto}
+${eventoselect}
 
 Reglas:
-- Si el mensaje recibido por el usuario no tiene sentido responde "Lo siento, no entendí tu pregunta. ¿Podrías repetirlo 😊?
+- Si el mensaje recibido por el usuario no tiene sentido responde "Lo siento, no entendí tu pregunta. ¿Podrías repetirlo 😊?"
 - Solo responde preguntas relacionadas con estos eventos y ofrece hablar con un asesor en caso de una petición diferente.
 - Si el usuario quiere ver la lista, muéstrasela con los títulos numerados y el link del evento solamente, has un salto de linea entre cada evento.
 - Si el usuario pregunta por un número de evento, devuélvele el link y los precios.
@@ -97,21 +137,9 @@ Reglas:
       }),
     });
 
-    const sesiones = new Map(); // key: número de WhatsApp, value: { eventoIndex, timestamp }
 
-    function setSesion(numero, data) {
-      sesiones.set(numero, { ...data, timestamp: Date.now() });
-    }
 
-    function getSesion(numero) {
-      const sesion = sesiones.get(numero);
-      if (!sesion) return null;
-      if (Date.now() - sesion.timestamp > 1000 * 60 * 15) {
-        sesiones.delete(numero);
-        return null;
-      }
-      return sesion;
-    }
+
 
     // Detectar si el mensaje menciona algún evento por nombre
     const mensajeUsuarioNormalizado = userMessage
@@ -149,7 +177,7 @@ Reglas:
       setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
     }
 
-    const sesion = getSesion(senderNumber);
+
 
     if (sesion?.eventoIndex !== undefined) {
       const evento = eventos[sesion.eventoIndex];
@@ -157,13 +185,13 @@ Reglas:
       console.log("Evento: ", evento);
 
       const mes = `Elegiste el evento ${evento.title} ¿Cómo podemos ayudarte? Elige una opción:
-1️⃣ Ver precios y zonas \n 
-2️⃣ Consultar fecha del evento  \n
-3️⃣ Ver disponibilidad  \n
-4️⃣ No recibí mis boletos \n  
-5️⃣ Enviar identificación   \n
-6️⃣ ¿Por qué me piden identificación?   \n
-7️⃣ Validar pago o correo   \n
+1️⃣ Ver precios y zonas  
+2️⃣ Consultar fecha del evento  
+3️⃣ Ver disponibilidad  
+4️⃣ No recibí mis boletos   
+5️⃣ Enviar identificación   
+6️⃣ ¿Por qué me piden identificación?   
+7️⃣ Validar pago o correo   
 8️⃣ Comprar boletos`;
 
       await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
@@ -240,8 +268,11 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       return res.status(200).end();
 
     }
+/*     if (userMessage.toLowerCase().includes("2")) {
 
-    if (replyText.toLowerCase().includes("4") || replyText.toLowerCase().includes("7") || replyText.toLowerCase().includes("5") || replyText.toLowerCase().includes("6")) {
+    } */
+
+    if (userMessage.toLowerCase().includes("4") || userMessage.toLowerCase().includes("7") || userMessage.toLowerCase().includes("5") || userMessage.toLowerCase().includes("6")) {
       const contactoPayload = {
         messaging_product: "whatsapp",
         to: senderNumber,
@@ -280,22 +311,22 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       return res.status(200).end();
     }
 
-    await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: senderNumber,
-        type: "text",
-        text: {
-          preview_url: false,
-          body: replyText,
-        },
-      }),
-    });
+        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to: senderNumber,
+            type: "text",
+            text: {
+              preview_url: false,
+              body: replyText,
+            },
+          }),
+        });
 
     return res.status(200).end();
   }
