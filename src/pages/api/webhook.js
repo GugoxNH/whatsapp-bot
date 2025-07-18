@@ -36,22 +36,7 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-    const sesiones = new Map(); // key: número de WhatsApp, value: { eventoIndex, timestamp }
 
-    function setSesion(numero, data) {
-      sesiones.set(numero, { ...data, timestamp: Date.now() });
-    }
-
-    function getSesion(numero) {
-      const sesion = sesiones.get(numero);
-      if (!sesion) return null;
-      if (Date.now() - sesion.timestamp > 1000 * 60 * 15) {
-        sesiones.delete(numero);
-        return null;
-      }
-      return sesion;
-    }
-    const sesion = getSesion(senderNumber);
 
 
 
@@ -80,29 +65,10 @@ Zonas:
 ${zonas}
 `;
     }).join("\n");
-    let eventoselect = "";
-    if (sesion?.eventoIndex !== undefined) {
-      const evento = eventos[sesion.eventoIndex];
-      eventoselect = evento.map((e) => {
-        const zonas = e.variations
-          .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
-          .join("\n");
-
-        return `El evento que selecciono el cliente es:
-Título: ${e.title}
-Link: ${e.link}
-Zonas:
-${zonas}
-`;
-      }).join("\n");
-    }
-
-    console.log("Eventsel: ", eventoselect);
 
     // 3. Crear contexto completo para IA
-    const contexto = `
-Eres un asistente de la boletera *Preding*. Tu trabajo es ayudar a los usuarios a encontrar eventos disponibles y guiarlos con información útil.
-Al recibir un saludo, responde con un saludo.
+    const contexto = `Tu trabajo es ayudar a los usuarios a encontrar eventos disponibles y guiarlos con información útil.
+Al recibir un saludo, responde con un "hola".
 
 Aquí está la lista completa de eventos disponibles con todos los detalles:
 
@@ -137,7 +103,22 @@ Reglas:
       }),
     });
 
+    const sesiones = new Map(); // key: número de WhatsApp, value: { eventoIndex, timestamp }
 
+    function setSesion(numero, data) {
+      sesiones.set(numero, { ...data, timestamp: Date.now() });
+    }
+
+    function getSesion(numero) {
+      const sesion = sesiones.get(numero);
+      if (!sesion) return null;
+      if (Date.now() - sesion.timestamp > 1000 * 60 * 15) {
+        sesiones.delete(numero);
+        return null;
+      }
+      return sesion;
+    }
+    const sesion = getSesion(senderNumber);
 
 
 
