@@ -35,8 +35,8 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-    /*     console.log("Numero: ", senderNumber)
-        console.log("MessageID: ", messageId) */
+        console.log("Numero: ", senderNumber)
+        console.log("MessageID: ", messageId)
 
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
@@ -134,7 +134,7 @@ Reglas:
         tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
         mensajeUsuarioNormalizado.includes(tituloNormalizado)
       ) {
-        eventoIndexDetectado = index;        
+        eventoIndexDetectado = index;
       }
     });
 
@@ -155,6 +155,33 @@ Reglas:
       const evento = eventos[sesion.eventoIndex];
       console.log("Index del evento seleccionado " + sesion.eventoIndex);
       console.log("Evento: ", evento);
+
+      const mes = `Elegiste el evento ${evento.title} ¿Cómo podemos ayudarte? Elige una opción:
+1️⃣ Ver precios y zonas \n 
+2️⃣ Consultar fecha del evento  \n
+3️⃣ Ver disponibilidad  \n
+4️⃣ No recibí mis boletos \n  
+5️⃣ Enviar identificación   \n
+6️⃣ ¿Por qué me piden identificación?   \n
+7️⃣ Validar pago o correo   \n
+8️⃣ Comprar boletos`;
+
+      await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: senderNumber,
+          type: "text",
+          text: {
+            preview_url: false,
+            body: mes,
+          },
+        }),
+      });
       // Ahora puedes usar: evento.title, evento.link, evento.image, etc.
     }
 
