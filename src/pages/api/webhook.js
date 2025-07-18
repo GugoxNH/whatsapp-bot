@@ -83,7 +83,7 @@ ${zonas}
     let eventoselect = "";
     if (sesion?.eventoIndex !== undefined) {
       const evento = eventos[sesion.eventoIndex];
-      eventoselect = evento.map((e, i) => {
+      eventoselect = evento.map((e) => {
         const zonas = e.variations
           .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
           .join("\n");
@@ -97,7 +97,7 @@ ${zonas}
       }).join("\n");
     }
 
-    console.log("Eventsel: " ,eventoselect);
+    console.log("Eventsel: ", eventoselect);
 
     // 3. Crear contexto completo para IA
     const contexto = `
@@ -268,9 +268,9 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       return res.status(200).end();
 
     }
-/*     if (userMessage.toLowerCase().includes("2")) {
-
-    } */
+    /*     if (userMessage.toLowerCase().includes("2")) {
+    
+        } */
 
     if (userMessage.toLowerCase().includes("4") || userMessage.toLowerCase().includes("7") || userMessage.toLowerCase().includes("5") || userMessage.toLowerCase().includes("6")) {
       const contactoPayload = {
@@ -311,22 +311,22 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       return res.status(200).end();
     }
 
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: senderNumber,
-            type: "text",
-            text: {
-              preview_url: false,
-              body: replyText,
-            },
-          }),
-        });
+    await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: senderNumber,
+        type: "text",
+        text: {
+          preview_url: false,
+          body: replyText,
+        },
+      }),
+    });
 
     return res.status(200).end();
   }
