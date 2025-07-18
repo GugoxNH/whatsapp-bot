@@ -147,8 +147,8 @@ Reglas:
 
     if (sesion?.eventoIndex !== undefined) {
       const evento = eventos[sesion.eventoIndex];
-      console.log("Index del evento seleccionado" + eventoIndex);
-      console.log("Evento: " + evento[eventoIndex].title);
+      console.log("Index del evento seleccionado" + sesion.eventoIndex);
+      console.log("Evento: " + evento[sesion.eventoIndex].title);
       // Ahora puedes usar: evento.title, evento.link, evento.image, etc.
     }
 
