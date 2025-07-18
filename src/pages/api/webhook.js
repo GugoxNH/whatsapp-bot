@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-    
+
 
 
     console.log("Numero: ", senderNumber)
@@ -103,15 +103,7 @@ Reglas:
       }),
     });
 
-     setSesion(senderNumber, { eventoIndex: 1 });
 
-    const sesion = getSesion(senderNumber);
-
-
-    if (sesion?.eventoIndex !== undefined) {
-  const evento = eventos[sesion.eventoIndex];
-  console.log("✅ Evento desde Redis:", evento.title);
-}
 
 
     // Detectar si el mensaje menciona algún evento por nombre
@@ -150,6 +142,16 @@ Reglas:
       setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
     }
 
+    setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
+
+    const sesion = getSesion(senderNumber);
+
+
+    if (sesion?.eventoIndex !== undefined) {
+      const evento = eventos[sesion.eventoIndex];
+      console.log("✅ Evento desde Redis:", evento.title);
+    }
+
 
 
     if (sesion?.eventoIndex !== undefined) {
@@ -183,7 +185,7 @@ Reglas:
           },
         }),
       });
-    } 
+    }
 
     const aiJson = await aiResponse.json();
     let replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
@@ -196,7 +198,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
     const saludoDetectado = /(hola|bienvenido|gracias por escribirnos|gracias por contactar)/i.test(replyText);
 
     console.log("saludo: ", replyText);
-    
+
 
 
     if (saludoDetectado) {
