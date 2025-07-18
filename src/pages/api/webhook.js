@@ -36,11 +36,6 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-
-
-
-
-
     console.log("Numero: ", senderNumber)
     console.log("MessageID: ", messageId)
 
@@ -206,6 +201,10 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
     // Verificamos si la IA devolvió un saludo inicial
     const saludoDetectado = /^hola|bienvenido|gracias por escribirnos|gracias por contactar/i.test(replyText);
 
+    console.log("saludo: ", replyText);
+    
+
+
     if (saludoDetectado) {
       // Agregamos lista de eventos
       const eventosLista = eventos.map(e => `- ${e.title}`).join("\n");
@@ -228,6 +227,8 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
         }),
       });
 
+      console.log("saludoDetectado: ", saludoDetectado);
+
       await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
         method: "POST",
         headers: {
@@ -244,13 +245,9 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
           },
         }),
       });
-
       return res.status(200).end();
-
     }
-    /*     if (userMessage.toLowerCase().includes("2")) {
-    
-        } */
+
 
     if (userMessage.toLowerCase().includes("4") || userMessage.toLowerCase().includes("7") || userMessage.toLowerCase().includes("5") || userMessage.toLowerCase().includes("6")) {
       const contactoPayload = {
