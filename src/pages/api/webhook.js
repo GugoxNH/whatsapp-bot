@@ -73,7 +73,6 @@ Al recibir un saludo, responde con un "hola".
 Aquí está la lista completa de eventos disponibles con todos los detalles:
 
 ${eventosTexto}
-${eventoselect}
 
 Reglas:
 - Si el mensaje recibido por el usuario no tiene sentido responde "Lo siento, no entendí tu pregunta. ¿Podrías repetirlo 😊?"
