@@ -39,16 +39,7 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-    setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
-
-    const sesion = getSesion(senderNumber);
-
-
-    if (sesion?.eventoIndex !== undefined) {
-  const evento = eventos[sesion.eventoIndex];
-  console.log("✅ Evento desde Redis:", evento.title);
-}
-
+    
 
 
     console.log("Numero: ", senderNumber)
@@ -112,22 +103,16 @@ Reglas:
       }),
     });
 
-   /*  const sesiones = new Map(); // key: número de WhatsApp, value: { eventoIndex, timestamp }
+     setSesion(senderNumber, { eventoIndex: 1 });
 
-    function setSesion(numero, data) {
-      sesiones.set(numero, { ...data, timestamp: Date.now() });
-    }
-
-    function getSesion(numero) {
-      const sesion = sesiones.get(numero);
-      if (!sesion) return null;
-      if (Date.now() - sesion.timestamp > 1000 * 60 * 15) {
-        sesiones.delete(numero);
-        return null;
-      }
-      return sesion;
-    }
     const sesion = getSesion(senderNumber);
+
+
+    if (sesion?.eventoIndex !== undefined) {
+  const evento = eventos[sesion.eventoIndex];
+  console.log("✅ Evento desde Redis:", evento.title);
+}
+
 
     // Detectar si el mensaje menciona algún evento por nombre
     const mensajeUsuarioNormalizado = userMessage
@@ -198,10 +183,7 @@ Reglas:
           },
         }),
       });
-    } */
-
-
-
+    } 
 
     const aiJson = await aiResponse.json();
     let replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
