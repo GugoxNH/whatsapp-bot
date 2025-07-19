@@ -70,19 +70,19 @@ ${zonas}
     let evento_select = "";
     if (sesion?.eventoIndex !== undefined) {
       const evento_aux = eventos[sesion.eventoIndex];
-      evento_select = evento_aux.map((e) => {
-        const zonas = e.variations
-          .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
-          .join("\n");
+      const zonas = evento_aux.variations
+        .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
+        .join("\n");
 
-        return `Este es el evento que selecciono el usuario:
-Título: ${e.title}
-Link: ${e.link}
+      evento_select = `Este es el evento que selecciono el usuario:
+Título: ${evento_aux.title}
+Link: ${evento_aux.link}
 Zonas:
 ${zonas}
 `;
-      }).join("\n");
     }
+
+    console.log("evento_select: ", evento_select);
 
 
     // 3. Crear contexto completo para IA
@@ -335,25 +335,25 @@ Nos permite verificar que el titular de la tarjeta con la que se hizo el pago es
       return res.status(200).end();
     }
 
-
-    await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: senderNumber,
-        type: "text",
-        text: {
-          preview_url: false,
-          body: replyText,
-        },
-      }),
-    });
-
-    return res.status(200).end();
+    /* 
+        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to: senderNumber,
+            type: "text",
+            text: {
+              preview_url: false,
+              body: replyText,
+            },
+          }),
+        });
+    
+        return res.status(200).end(); */
   }
   return res.status(405).end();
 }
