@@ -93,6 +93,8 @@ Aquí está la lista completa de eventos disponibles con todos los detalles:
 
 ${eventosTexto}
 
+${evento_select}
+
 Reglas:
 - Si el mensaje recibido por el usuario no tiene sentido responde "Lo siento, no entendí tu pregunta. ¿Podrías repetirlo 😊?"
 - Solo responde preguntas relacionadas con estos eventos y ofrece hablar con un asesor en caso de una petición diferente.
