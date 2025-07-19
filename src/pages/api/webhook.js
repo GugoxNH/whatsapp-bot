@@ -125,6 +125,8 @@ Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde
     const aiJson = await aiResponse.json();
     let replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
+    console.log("Respuesta IA: ", replyText);
+
     const mensajeSaludo = `👋 ¡Hola! Gracias por contactar a Soporte Boletos.  
 Estamos aquí para ayudarte con cualquier duda sobre tu compra, boletos, fechas o disponibilidad.  
 Por favor indícanos tu número de orden o el evento de tu interés.`;
