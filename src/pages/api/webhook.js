@@ -87,7 +87,7 @@ ${zonas}
 
     // 3. Crear contexto completo para IA
     const contexto = `Tu trabajo es ayudar a los usuarios a encontrar eventos disponibles y guiarlos con información útil.
-Al recibir un saludo, responde con la palabra "hola" solamente.
+
 
 Aquí está la lista completa de eventos disponibles con todos los detalles:
 ${eventosTexto}
@@ -126,6 +126,7 @@ Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde
     let replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
     console.log("Respuesta IA: ", replyText);
+    console.log("Mensaje user: ", userMessage);
 
     const mensajeSaludo = `👋 ¡Hola! Gracias por contactar a Soporte Boletos.  
 Estamos aquí para ayudarte con cualquier duda sobre tu compra, boletos, fechas o disponibilidad.  
