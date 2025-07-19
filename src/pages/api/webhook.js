@@ -206,34 +206,40 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       return res.status(200).end();
     }
 
-    let eventoIndexDetectado = -1;
-    // Detectar si el mensaje menciona algún evento por nombre
-    const mensajeUsuarioNormalizado = userMessage
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^\w\s]/gi, ""); // quitar signos
+let eventoIndexDetectado = -1;
 
-    eventos.forEach((evento, index) => {
-      const tituloNormalizado = evento.title
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^\w\s]/gi, "");
+// Normaliza el mensaje del usuario
+const mensajeUsuarioNormalizado = userMessage
+  .toLowerCase()
+  .normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "")
+  .replace(/[^\w\s]/gi, "");
 
-      if (
-        tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
-        mensajeUsuarioNormalizado.includes(tituloNormalizado)
-      ) {
-        eventoIndexDetectado = index;
-      }
-    });
+eventos.forEach((evento, index) => {
+  // Solo usamos la parte del título hasta el primer guion
+  const tituloOriginal = evento.title.split(" - ")[0] || evento.title;
 
-    if (eventoIndexDetectado !== -1) {
-      console.log(`🎯 Evento detectado: ${eventos[eventoIndexDetectado].title}`);
-      setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
-      sesion = await getSesion(senderNumber);
-    }
+  const tituloNormalizado = tituloOriginal
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s]/gi, "");
+
+  // Comparación: si el mensaje está contenido en el nombre del artista
+  if (
+    tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
+    mensajeUsuarioNormalizado.includes(tituloNormalizado)
+  ) {
+    eventoIndexDetectado = index;
+  }
+});
+
+if (eventoIndexDetectado !== -1) {
+  console.log(`🎯 Evento detectado: ${eventos[eventoIndexDetectado].title}`);
+  await setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
+  sesion = await getSesion(senderNumber);
+}
+
 
 
     if (sesion?.eventoIndex !== undefined) {
