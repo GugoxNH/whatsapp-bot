@@ -39,7 +39,7 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-    const sesion = await getSesion(senderNumber);
+    let sesion = await getSesion(senderNumber);
 
 
     console.log("Numero: ", senderNumber)
@@ -74,7 +74,7 @@ ${zonas}
         .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
         .join("\n");
 
-      evento_select = `Este es el evento que selecciono el usuario:
+      evento_select = `Este es el evento que seleccione:
 Título: ${evento_aux.title}
 Link: ${evento_aux.link}
 Zonas:
@@ -87,24 +87,18 @@ ${zonas}
 
     // 3. Crear contexto completo para IA
     const contexto = `Tu trabajo es ayudar a los usuarios a encontrar eventos disponibles y guiarlos con información útil.
-Al recibir un saludo, responde con un "hola".
+Al recibir un saludo, responde con la palabra "hola" solamente.
 
 Aquí está la lista completa de eventos disponibles con todos los detalles:
-
 ${eventosTexto}
 
 ${evento_select}
 
-Reglas:
-- Si el mensaje recibido por el usuario no tiene sentido responde "Lo siento, no entendí tu pregunta. ¿Podrías repetirlo 😊?"
-- Solo responde preguntas relacionadas con estos eventos y ofrece hablar con un asesor en caso de una petición diferente.
-- Si el usuario quiere ver la lista, muéstrasela con los títulos numerados y el link del evento solamente, has un salto de linea entre cada evento.
-- Si el usuario pregunta por un número de evento, devuélvele el link y los precios.
-- Si el usuario escribe algo fuera de tema, pídele que solicite la lista o escriba el número del evento.
-- No inventes datos, responde siempre con la información proporcionada aquí.
-- No asumas la ubicación del usuario.0
-- Si el usuario pide información muy especifica o algo con el que no puedas ayudarlo, sugiere que pida ayuda a un "asesor" y que le proporcionaras el número.
-- Sé amable y breve.
+Acciones:
+- Si te escribo el número "1" muestrame la lista de los precios y las zonas del evento seleccionado, agrega un emoji al inicio de cada elemento referente al nombre de la zona.
+- Si te escribo el número "2" muestrame el nombre de el evento en una linea y la fecha del evento en otra linea y el lugar en otra, usa el emoji "📅" para la fecha y el emoji "📍" para el lugar.
+
+Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde "Lo siento, no entendí tu pregunta."
 `;
 
     // 4. Llamada a OpenRouter
@@ -123,12 +117,17 @@ Reglas:
       }),
     });
 
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+
     const aiJson = await aiResponse.json();
     let replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
 
     const mensajeSaludo = `👋 ¡Hola! Gracias por contactar a Soporte Boletos.  
-                            Estamos aquí para ayudarte con cualquier duda sobre tu compra, boletos, fechas o disponibilidad.  
-                            Por favor indícanos tu número de orden o el evento de tu interés.`;
+Estamos aquí para ayudarte con cualquier duda sobre tu compra, boletos, fechas o disponibilidad.  
+Por favor indícanos tu número de orden o el evento de tu interés.`;
 
     const contactoPayload = {
       messaging_product: "whatsapp",
@@ -157,8 +156,6 @@ Reglas:
     };
 
     const saludoDetectado = /(hola|bienvenido|gracias por escribirnos|gracias por contactar)/i.test(replyText);
-    console.log("saludo: ", replyText);
-
     //Primer mensaje de la la lista
     if (saludoDetectado) {
       const eventosLista = eventos.map(e => `- ${e.title}`).join("\n");
@@ -228,6 +225,7 @@ Reglas:
     if (eventoIndexDetectado !== -1) {
       console.log(`🎯 Evento detectado: ${eventos[eventoIndexDetectado].title}`);
       setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
+      sesion = await getSesion(senderNumber);
     }
 
 
@@ -238,27 +236,29 @@ Reglas:
       console.log("✅ Evento desde Redis:", evento.title);
 
       const mes = `Elegiste el evento ${evento.title} ¿Cómo podemos ayudarte? Elige una opción:
-                  1️⃣ Ver precios y zonas  
-                  2️⃣ Consultar fecha del evento  
-                  3️⃣ Ver disponibilidad  
-                  4️⃣ No recibí mis boletos   
-                  5️⃣ Enviar identificación   
-                  6️⃣ ¿Por qué me piden identificación?   
-                  7️⃣ Validar pago o correo   
-                  8️⃣ Comprar boletos`;
+1️⃣ Ver precios y zonas  
+2️⃣ Consultar fecha del evento  
+3️⃣ Ver disponibilidad  
+4️⃣ No recibí mis boletos   
+5️⃣ Enviar identificación   
+6️⃣ ¿Por qué me piden identificación?   
+7️⃣ Validar pago o correo   
+8️⃣ Comprar boletos`;
       const opcion = userMessage.trim();
       let mess_opt = "";
 
       if (/^(4|5|7)$/.test(opcion)) {
         switch (opcion) {
           case "4":
-            mess_opt = `Lamentamos el inconveniente :( 
+            mess_opt = `📩 No recibí mi correo con los boletos
+Lamentamos el inconveniente :( 
 Por favor compártenos el número de orden y el correo con el que realizaste la compra al siguiente contacto para validar el envío.
 
 Mientras tanto, revisa tu bandeja de spam o no deseados. A veces los boletos llegan ahí.`;
             break;
           case "5"://cambiar correo
-            mess_opt = `Si estás teniendo problemas para enviar tu identificación, puedes intentar lo siguiente:
+            mess_opt = `🪪 Problemas para mandar identificación
+Si estás teniendo problemas para enviar tu identificación, puedes intentar lo siguiente:
 
 1. Asegúrate de que la imagen esté clara y legible.  
 2. Envía la foto directamente al contacto que se te mandará a continuación.  
@@ -300,20 +300,126 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
 
         return res.status(200).end();
       } else if (/^1$/.test(opcion)) {
-        mess_opt = `La solicitud de identificación es una medida de seguridad para proteger tanto al comprador como al organizador del evento.  
-Nos permite verificar que el titular de la tarjeta con la que se hizo el pago es quien realizó la compra, evitando fraudes o cargos no autorizados.`;
+        mess_opt = `Los precios y zonas disponibles para *${evento.title}* son:
+${replyText}`;
+
+        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to: senderNumber,
+            type: "text",
+            text: {
+              preview_url: false,
+              body: mess_opt,
+            },
+          }),
+        });
+        return res.status(200).end();
       } else if (/^2$/.test(opcion)) {
-        mess_opt = `La solicitud de identificación es una medida de seguridad para proteger tanto al comprador como al organizador del evento.  
-Nos permite verificar que el titular de la tarjeta con la que se hizo el pago es quien realizó la compra, evitando fraudes o cargos no autorizados.`;
+        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to: senderNumber,
+            type: "text",
+            text: {
+              preview_url: false,
+              body: replyText,
+            },
+          }),
+        });
+        return res.status(200).end();
       } else if (/^3$/.test(opcion)) {
-        mess_opt = `La solicitud de identificación es una medida de seguridad para proteger tanto al comprador como al organizador del evento.  
-Nos permite verificar que el titular de la tarjeta con la que se hizo el pago es quien realizó la compra, evitando fraudes o cargos no autorizados.`;
+        mess_opt = `✅El evento de ${evento.title} aún se encuentra disponible, asegurate de darte prisa para conseguir tus boletos
+🔗 Enlace para comprar boletos:
+${evento.link}`;
+        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to: senderNumber,
+            type: "text",
+            text: {
+              preview_url: false,
+              body: "⌛Comprobando disponibilidad...",
+            },
+          }),
+        });
+        await sleep(3000);
+        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to: senderNumber,
+            type: "text",
+            text: {
+              preview_url: false,
+              body: mess_opt,
+            },
+          }),
+        });
+        return res.status(200).end();
       } else if (/^6$/.test(opcion)) {
-        mess_opt = `La solicitud de identificación es una medida de seguridad para proteger tanto al comprador como al organizador del evento.  
+        mess_opt = `❓ ¿Por qué me piden identificación?
+La solicitud de identificación es una medida de seguridad para proteger tanto al comprador como al organizador del evento.  
 Nos permite verificar que el titular de la tarjeta con la que se hizo el pago es quien realizó la compra, evitando fraudes o cargos no autorizados.`;
+await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to: senderNumber,
+            type: "text",
+            text: {
+              preview_url: false,
+              body: mess_opt,
+            },
+          }),
+        });
+        return res.status(200).end();
       } else if (/^8$/.test(opcion)) {
-        mess_opt = `La solicitud de identificación es una medida de seguridad para proteger tanto al comprador como al organizador del evento.  
-Nos permite verificar que el titular de la tarjeta con la que se hizo el pago es quien realizó la compra, evitando fraudes o cargos no autorizados.`;
+        mess_opt = `🔗 Enlace para comprar boletos
+🎫 Puedes comprar tus boletos para *${evento.title}* en el siguiente enlace:  
+👉 ${evento.link}
+
+Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a disponibilidad.`;
+await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messaging_product: "whatsapp",
+            to: senderNumber,
+            type: "text",
+            text: {
+              preview_url: false,
+              body: mess_opt,
+            },
+          }),
+        });
+        return res.status(200).end();
       } else {
         await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
           method: "POST",
