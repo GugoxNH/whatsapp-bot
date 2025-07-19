@@ -87,12 +87,14 @@ ${zonas}
 
     // 3. Crear contexto completo para IA
     const contexto = `Tu trabajo es ayudar a los usuarios a encontrar eventos disponibles y guiarlos con información útil.
-
-
 Aquí está la lista completa de eventos disponibles con todos los detalles:
 ${eventosTexto}
 
 ${evento_select}
+
+Reglas:
+- Solo al recibir un saludo, responde con la palabra "hola".
+- Si recibes un número, pasa a tus acciones y has lo que se te dice ahi, no te inventes nada, solo obedece a las acciones pre hechas.
 
 Acciones:
 - Si te escribo el número "1" muestrame la lista de los precios y las zonas del evento seleccionado, agrega un emoji al inicio de cada elemento referente al nombre de la zona.
