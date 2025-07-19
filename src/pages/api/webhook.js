@@ -93,8 +93,9 @@ ${eventosTexto}
 ${evento_select}
 
 Reglas:
+- Si recibes un número, pasa a tus acciones y has lo que se te dice ahi, no te inventes nada, e ignora la siguiente regla.
 - Solo al recibir un saludo, responde con la palabra "hola".
-- Si recibes un número, pasa a tus acciones y has lo que se te dice ahi, no te inventes nada, solo obedece a las acciones pre hechas.
+
 
 Acciones:
 - Si te escribo el número "1" muestrame la lista de los precios y las zonas del evento seleccionado, agrega un emoji al inicio de cada elemento referente al nombre de la zona.
@@ -161,8 +162,9 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
     };
 
     const saludoDetectado = /(hola|bienvenido|gracias por escribirnos|gracias por contactar)/i.test(replyText);
+    const saludoDetectado_user = /(hola|informacion|eventos|saludos)/i.test(userMessage);
     //Primer mensaje de la la lista
-    if (saludoDetectado) {
+    if (saludoDetectado && saludoDetectado_user) {
       const eventosLista = eventos.map(e => `- ${e.title}`).join("\n");
       const lista = `🎟️ *Eventos disponibles:*\n${eventosLista}`;
 
