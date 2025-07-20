@@ -41,8 +41,8 @@ export default async function handler(req, res) {
     let sesion = await getSesion(senderNumber);
 
 
-    console.log("Numero: ", senderNumber)
-    console.log("MessageID: ", messageId)
+/*     console.log("Numero: ", senderNumber)
+    console.log("MessageID: ", messageId) */
 
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
@@ -80,10 +80,6 @@ Zonas:
 ${zonas}
 `;
     }
-
-    console.log("evento_select: ", evento_select);
-
-
     // 3. Crear contexto completo para IA
     const contexto = `Tu trabajo es ayudar a los usuarios a encontrar eventos disponibles y guiarlos con información útil.
 Aquí está la lista completa de eventos disponibles con todos los detalles:
@@ -95,7 +91,6 @@ Reglas:
 - Si recibes un número, pasa a tus acciones y has lo que se te dice ahi, no te inventes nada, e ignora la siguiente regla.
 - Solo al recibir un saludo, responde con la palabra "hola".
 
-
 Acciones:
 - Si te escribo el número "1" muestrame la lista de los precios y las zonas del evento seleccionado, agrega los siguientes emojis segun la area DIAMANTE(💎), VIP(🔒), DORADA(👑), AZUL(💙), AMARILLA(💛), ROJA(❤️).
 - Si te escribo el número "2" muestrame el nombre de el evento en una linea y la fecha del evento en otra linea y el lugar en otra, usa el emoji "📅" para la fecha y el emoji "📍" para el lugar.
@@ -103,7 +98,6 @@ Acciones:
 Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde "Lo siento, no entendí tu pregunta."
 `;
 
-    // 4. Llamada a OpenRouter
     const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -142,8 +136,6 @@ Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde
       });
     }
 
-
-
     const aiJson = await aiResponse.json();
     let replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
     const eventosLista = eventos.map(e => `- ${e.title}`).join("\n");
@@ -163,13 +155,13 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       contacts: [
         {
           name: {
-            formatted_name: "Soporte",
-            first_name: "Boletos",
+            formatted_name: "Soporte Especializado Boletos",
+            first_name: "Soporte Especializado Boletos",
             last_name: ""
           },
           org: {
-            company: "Soporte Boletos",
-            title: "Soporte"
+            company: "Soporte Especializado Boletos",
+            title: "Soporte Especializado Boletos"
           },
           phones: [
             {
@@ -181,8 +173,6 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
         }
       ]
     };
-
-
 
     const saludoDetectado = /(hola|bienvenido|gracias por escribirnos|gracias por contactar)/i.test(replyText);
     const saludoDetectado_user = /(hola|informacion|eventos|saludos)/i.test(userMessage);
@@ -204,16 +194,15 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
         .trim();
     }
 
-
-
     // Detectar eventos coincidentes con el mensaje del usuario
     let eventosDetectados = [];
 
     const mensajeUsuarioNormalizado = normalizarTexto(userMessage);
+    console.log("mensajeUsuarioNormalizado: ",mensajeUsuarioNormalizado);
     eventos.forEach((evento, index) => {
       const tituloArtista = evento.title.split(" - ")[0] || evento.title;
       const tituloNormalizado = normalizarTexto(tituloArtista);
-
+console.log("tituloNormalizado: ",tituloNormalizado)
       if (
         tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
         mensajeUsuarioNormalizado.includes(tituloNormalizado)
@@ -226,7 +215,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       const eventoIndex = eventosDetectados[0].index;
       await setSesion(senderNumber, { eventoIndex });
       sesion = await getSesion(senderNumber);
-      console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
+     // console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
     } else if (eventosDetectados.length > 1) {
       const opciones = eventosDetectados
         .map((e, i) => `${i + 1}. ${eventos[e.index].title}`)
@@ -252,7 +241,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       const eventoElegidoIndex = sesion.posiblesEventos[seleccion - 1];
       await setSesion(senderNumber, { eventoIndex: eventoElegidoIndex });
       sesion = await getSesion(senderNumber);
-      console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
+     // console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
 
       const mes = `Elegiste el evento ${eventos[eventoElegidoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
 1️⃣ Ver precios y zonas  
@@ -272,8 +261,6 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
 
     if (sesion?.eventoIndex !== undefined) {
       const evento = eventos[sesion.eventoIndex];
-      console.log("Index del evento seleccionado " + sesion.eventoIndex);
-      console.log("Evento: ", evento);
       console.log("✅ Evento desde Redis:", evento.title);
       const mes = `Elegiste el evento ${evento.title} ¿Cómo podemos ayudarte? Elige una opción:
 1️⃣ Ver precios y zonas  
@@ -368,7 +355,7 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
     }
 
 
-    
+    /* 
         await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
           method: "POST",
           headers: {
@@ -386,7 +373,7 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
           }),
         });
     
-        return res.status(200).end();
+        return res.status(200).end(); */
   }
   return res.status(405).end();
 }
