@@ -181,6 +181,8 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       ]
     };
 
+
+
     const saludoDetectado = /(hola|bienvenido|gracias por escribirnos|gracias por contactar)/i.test(replyText);
     const saludoDetectado_user = /(hola|informacion|eventos|saludos)/i.test(userMessage);
     //Primer mensaje de la la lista
@@ -254,7 +256,17 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       sesion = await getSesion(senderNumber);
       console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
 
-      await enviarMensaje(senderNumber, `Has seleccionado: ${eventos[eventoElegidoIndex].title}`);
+
+      const mes = `Elegiste el evento ${eventos[eventoElegidoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
+1️⃣ Ver precios y zonas  
+2️⃣ Consultar fecha del evento  
+3️⃣ Ver disponibilidad  
+4️⃣ No recibí mis boletos   
+5️⃣ Enviar identificación   
+6️⃣ ¿Por qué me piden identificación?   
+7️⃣ Validar pago o correo   
+8️⃣ Comprar boletos`;
+      await enviarMensaje(senderNumber, mes);
       return res.status(200).end();
     }
 
@@ -265,7 +277,6 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       console.log("Index del evento seleccionado " + sesion.eventoIndex);
       console.log("Evento: ", evento);
       console.log("✅ Evento desde Redis:", evento.title);
-
       const mes = `Elegiste el evento ${evento.title} ¿Cómo podemos ayudarte? Elige una opción:
 1️⃣ Ver precios y zonas  
 2️⃣ Consultar fecha del evento  
@@ -275,6 +286,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
 6️⃣ ¿Por qué me piden identificación?   
 7️⃣ Validar pago o correo   
 8️⃣ Comprar boletos`;
+
       const opcion = userMessage.trim();
       let mess_opt = "";
 
