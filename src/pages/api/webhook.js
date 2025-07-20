@@ -1,4 +1,6 @@
 import { setSesion, getSesion } from "../../lib/sesion.js"; // o "../lib/..." según tu estructura
+import stringSimilarity from "string-similarity";
+
 
 
 const processedMessages = new Set();
@@ -205,70 +207,84 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
         .trim();
     }
 
+
+
     // Detectar eventos coincidentes con el mensaje del usuario
     let eventosDetectados = [];
+let mejorCoincidencia = { index: -1, puntuacion: 0 };
 
-    const mensajeUsuarioNormalizado = normalizarTexto(userMessage);
+const mensajeUsuarioNormalizado = normalizarTexto(userMessage);
 
-    eventos.forEach((evento, index) => {
-      const tituloArtista = evento.title.split(" - ")[0] || evento.title;
-      const tituloNormalizado = normalizarTexto(tituloArtista);
+// Buscar coincidencias exactas o parciales
+for (let i = 0; i < eventos.length; i++) {
+  const evento = eventos[i];
+  const tituloArtista = evento.title.split(" - ")[0] || evento.title;
+  const tituloNormalizado = normalizarTexto(tituloArtista);
 
-      if (
-        tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
-        mensajeUsuarioNormalizado.includes(tituloNormalizado)
-      ) {
-        eventosDetectados.push({ index, titulo: evento.title });
-      }
-    });
-
-    if (eventosDetectados.length === 1) {
-      const eventoIndex = eventosDetectados[0].index;
-      await setSesion(senderNumber, { eventoIndex });
-      sesion = await getSesion(senderNumber);
-      console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
-
-    } else if (eventosDetectados.length > 1) {
-      const opciones = eventosDetectados
-        .map((e, i) => `${i + 1}. ${eventos[e.index].title}`)
-        .join("\n");
-
-      await enviarMensaje(senderNumber, `🎤 El artista tiene varios eventos. Por favor selecciona uno escribiendo el número correspondiente:\n${opciones}`);
-
-      await setSesion(senderNumber, {
-        posiblesEventos: eventosDetectados.map(e => e.index),
-      });
-      return res.status(200).end();
+  if (
+    tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
+    mensajeUsuarioNormalizado.includes(tituloNormalizado)
+  ) {
+    eventosDetectados.push({ index: i, titulo: evento.title });
+  } else {
+    // Comparar similitud si no fue coincidencia exacta
+    const similitud = stringSimilarity.compareTwoStrings(mensajeUsuarioNormalizado, tituloNormalizado);
+    if (similitud > mejorCoincidencia.puntuacion && similitud >= 0.5) {
+      mejorCoincidencia = { index: i, puntuacion: similitud };
     }
+  }
+}
 
-    // Lógica para cuando el usuario contesta con un número y hay posiblesEventos
-    const seleccion = parseInt(userMessage.trim());
+// Si no hubo coincidencias directas, usar la mejor coincidencia aproximada
+if (eventosDetectados.length === 0 && mejorCoincidencia.index !== -1) {
+  eventosDetectados.push({ index: mejorCoincidencia.index, titulo: eventos[mejorCoincidencia.index].title });
+}
 
-    if (
-      sesion?.posiblesEventos &&
-      Number.isInteger(seleccion) &&
-      seleccion >= 1 &&
-      seleccion <= sesion.posiblesEventos.length
-    ) {
-      const eventoElegidoIndex = sesion.posiblesEventos[seleccion - 1];
-      await setSesion(senderNumber, { eventoIndex: eventoElegidoIndex });
-      sesion = await getSesion(senderNumber);
-      console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
+if (eventosDetectados.length === 1) {
+  const eventoIndex = eventosDetectados[0].index;
+  await setSesion(senderNumber, { eventoIndex });
+  sesion = await getSesion(senderNumber);
+  console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
+} else if (eventosDetectados.length > 1) {
+  const opciones = eventosDetectados
+    .map((e, i) => `${i + 1}. ${eventos[e.index].title}`)
+    .join("\n");
 
+  await enviarMensaje(senderNumber, `🎤 El artista tiene varios eventos. Por favor selecciona uno escribiendo el número correspondiente:\n${opciones}`);
 
-      const mes = `Elegiste el evento ${eventos[eventoElegidoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
-1️⃣ Ver precios y zonas  
-2️⃣ Consultar fecha del evento  
-3️⃣ Ver disponibilidad  
-4️⃣ No recibí mis boletos   
-5️⃣ Enviar identificación   
-6️⃣ ¿Por qué me piden identificación?   
-7️⃣ Validar pago o correo   
-8️⃣ Comprar boletos
-9️⃣ Regresar a la lista de eventos`;
-      await enviarMensaje(senderNumber, mes);
-      return res.status(200).end();
-    }
+  await setSesion(senderNumber, {
+    posiblesEventos: eventosDetectados.map(e => e.index),
+  });
+  return res.status(200).end();
+}
+
+// Lógica para cuando el usuario contesta con un número y hay posiblesEventos
+const seleccion = parseInt(userMessage.trim());
+
+if (
+  sesion?.posiblesEventos &&
+  Number.isInteger(seleccion) &&
+  seleccion >= 1 &&
+  seleccion <= sesion.posiblesEventos.length
+) {
+  const eventoElegidoIndex = sesion.posiblesEventos[seleccion - 1];
+  await setSesion(senderNumber, { eventoIndex: eventoElegidoIndex });
+  sesion = await getSesion(senderNumber);
+  console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
+
+  const mes = `Elegiste el evento ${eventos[eventoElegidoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
+1⃣ Ver precios y zonas  
+2⃣ Consultar fecha del evento  
+3⃣ Ver disponibilidad  
+4⃣ No recibí mis boletos   
+5⃣ Enviar identificación   
+6⃣ ¿Por qué me piden identificación?   
+7⃣ Validar pago o correo   
+8⃣ Comprar boletos
+9⃣ Regresar a la lista de eventos`;
+  await enviarMensaje(senderNumber, mes);
+  return res.status(200).end();
+}
 
 
 
