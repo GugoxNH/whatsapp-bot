@@ -124,6 +124,26 @@ Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde
       return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    async function enviarMensaje(numero, mensaje) {
+      return fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: numero,
+          type: "text",
+          text: {
+            preview_url: false,
+            body: mensaje,
+          },
+        }),
+      });
+    }
+
+
 
     const aiJson = await aiResponse.json();
     let replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
@@ -168,77 +188,75 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       const eventosLista = eventos.map(e => `- ${e.title}`).join("\n");
       const lista = `🎟️ *Eventos disponibles:*\n${eventosLista}`;
 
-      await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: senderNumber,
-          type: "text",
-          text: {
-            preview_url: false,
-            body: mensajeSaludo,
-          },
-        }),
-      });
-
+      await enviarMensaje(senderNumber, mensajeSaludo);
       console.log("saludoDetectado: ", saludoDetectado);
+      await enviarMensaje(senderNumber, lista);
+      return res.status(200).end();
+    }
 
-      await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          to: senderNumber,
-          type: "text",
-          text: {
-            preview_url: false,
-            body: lista,
-          },
-        }),
+    // Función para normalizar texto (puedes moverla a un archivo utils si quieres reutilizarla)
+    function normalizarTexto(str) {
+      return str
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^ñ\w\s]/gi, "")
+        .trim();
+    }
+
+    // Detectar eventos coincidentes con el mensaje del usuario
+    let eventosDetectados = [];
+
+    const mensajeUsuarioNormalizado = normalizarTexto(userMessage);
+
+    eventos.forEach((evento, index) => {
+      const tituloArtista = evento.title.split(" - ")[0] || evento.title;
+      const tituloNormalizado = normalizarTexto(tituloArtista);
+
+      if (
+        tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
+        mensajeUsuarioNormalizado.includes(tituloNormalizado)
+      ) {
+        eventosDetectados.push({ index, titulo: evento.title });
+      }
+    });
+
+    if (eventosDetectados.length === 1) {
+      const eventoIndex = eventosDetectados[0].index;
+      await setSesion(senderNumber, { eventoIndex });
+      sesion = await getSesion(senderNumber);
+      console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
+
+    } else if (eventosDetectados.length > 1) {
+      const opciones = eventosDetectados
+        .map((e, i) => `${i + 1}. ${eventos[e.index].title}`)
+        .join("\n");
+
+      await enviarMensaje(senderNumber, `🎤 El artista tiene varios eventos. Por favor selecciona uno escribiendo el número correspondiente:\n${opciones}`);
+
+      await setSesion(senderNumber, {
+        posiblesEventos: eventosDetectados.map(e => e.index),
       });
       return res.status(200).end();
     }
 
-let eventoIndexDetectado = -1;
+    // Lógica para cuando el usuario contesta con un número y hay posiblesEventos
+    const seleccion = parseInt(userMessage.trim());
 
-// Normaliza el mensaje del usuario
-const mensajeUsuarioNormalizado = userMessage
-  .toLowerCase()
-  .normalize("NFD")
-  .replace(/[\u0300-\u036f]/g, "")
-  .replace(/[^\w\s]/gi, "");
+    if (
+      sesion?.posiblesEventos &&
+      Number.isInteger(seleccion) &&
+      seleccion >= 1 &&
+      seleccion <= sesion.posiblesEventos.length
+    ) {
+      const eventoElegidoIndex = sesion.posiblesEventos[seleccion - 1];
+      await setSesion(senderNumber, { eventoIndex: eventoElegidoIndex });
+      sesion = await getSesion(senderNumber);
+      console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
 
-eventos.forEach((evento, index) => {
-  // Solo usamos la parte del título hasta el primer guion
-  const tituloOriginal = evento.title.split(" - ")[0] || evento.title;
-
-  const tituloNormalizado = tituloOriginal
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\w\s]/gi, "");
-
-  // Comparación: si el mensaje está contenido en el nombre del artista
-  if (
-    tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
-    mensajeUsuarioNormalizado.includes(tituloNormalizado)
-  ) {
-    eventoIndexDetectado = index;
-  }
-});
-
-if (eventoIndexDetectado !== -1) {
-  console.log(`🎯 Evento detectado: ${eventos[eventoIndexDetectado].title}`);
-  await setSesion(senderNumber, { eventoIndex: eventoIndexDetectado });
-  sesion = await getSesion(senderNumber);
-}
+      await enviarMensaje(senderNumber, `Has seleccionado: ${eventos[eventoElegidoIndex].title}`);
+      return res.status(200).end();
+    }
 
 
 
@@ -285,22 +303,7 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
             break;
         }
 
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: senderNumber,
-            type: "text",
-            text: {
-              preview_url: false,
-              body: mess_opt,
-            },
-          }),
-        });
+        await enviarMensaje(senderNumber, mess_opt);
 
         await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
           method: "POST",
@@ -315,100 +318,24 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
       } else if (/^1$/.test(opcion)) {
         mess_opt = `Los precios y zonas disponibles para *${evento.title}* son:
 ${replyText}`;
-
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: senderNumber,
-            type: "text",
-            text: {
-              preview_url: false,
-              body: mess_opt,
-            },
-          }),
-        });
+        await enviarMensaje(senderNumber, mess_opt);
         return res.status(200).end();
       } else if (/^2$/.test(opcion)) {
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: senderNumber,
-            type: "text",
-            text: {
-              preview_url: false,
-              body: replyText,
-            },
-          }),
-        });
+        await enviarMensaje(senderNumber, replyText);
         return res.status(200).end();
       } else if (/^3$/.test(opcion)) {
         mess_opt = `✅El evento de ${evento.title} aún se encuentra disponible, asegurate de darte prisa para conseguir tus boletos
 🔗 Enlace para comprar boletos:
 ${evento.link}`;
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: senderNumber,
-            type: "text",
-            text: {
-              preview_url: false,
-              body: "⌛Comprobando disponibilidad...",
-            },
-          }),
-        });
+        await enviarMensaje(senderNumber, "⌛Comprobando disponibilidad...");
         await sleep(3000);
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: senderNumber,
-            type: "text",
-            text: {
-              preview_url: false,
-              body: mess_opt,
-            },
-          }),
-        });
+        await enviarMensaje(senderNumber, mess_opt);
         return res.status(200).end();
       } else if (/^6$/.test(opcion)) {
         mess_opt = `❓ ¿Por qué me piden identificación?
 La solicitud de identificación es una medida de seguridad para proteger tanto al comprador como al organizador del evento.  
 Nos permite verificar que el titular de la tarjeta con la que se hizo el pago es quien realizó la compra, evitando fraudes o cargos no autorizados.`;
-await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: senderNumber,
-            type: "text",
-            text: {
-              preview_url: false,
-              body: mess_opt,
-            },
-          }),
-        });
+        await enviarMensaje(senderNumber, mess_opt);
         return res.status(200).end();
       } else if (/^8$/.test(opcion)) {
         mess_opt = `🔗 Enlace para comprar boletos
@@ -416,40 +343,10 @@ await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
 👉 ${evento.link}
 
 Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a disponibilidad.`;
-await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: senderNumber,
-            type: "text",
-            text: {
-              preview_url: false,
-              body: mess_opt,
-            },
-          }),
-        });
+        await enviarMensaje(senderNumber, mess_opt);
         return res.status(200).end();
       } else {
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: senderNumber,
-            type: "text",
-            text: {
-              preview_url: false,
-              body: mes,
-            },
-          }),
-        });
+        await enviarMensaje(senderNumber, mes);
       }
       return res.status(200).end();
     }
