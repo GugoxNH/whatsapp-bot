@@ -368,7 +368,7 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
     }
 
 
-    /* 
+    
         await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
           method: "POST",
           headers: {
@@ -386,7 +386,7 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
           }),
         });
     
-        return res.status(200).end(); */
+        return res.status(200).end();
   }
   return res.status(405).end();
 }
