@@ -147,6 +147,8 @@ Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde
 
     const aiJson = await aiResponse.json();
     let replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
+    const eventosLista = eventos.map(e => `- ${e.title}`).join("\n");
+    const lista = `🎟️ *Eventos disponibles:*\n${eventosLista}`;
 
     console.log("Respuesta IA: ", replyText);
     console.log("Mensaje user: ", userMessage);
@@ -187,9 +189,6 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
     const saludoDetectado_user = /(hola|informacion|eventos|saludos)/i.test(userMessage);
     //Primer mensaje de la la lista
     if (saludoDetectado && saludoDetectado_user) {
-      const eventosLista = eventos.map(e => `- ${e.title}`).join("\n");
-      const lista = `🎟️ *Eventos disponibles:*\n${eventosLista}`;
-
       await enviarMensaje(senderNumber, mensajeSaludo);
       console.log("saludoDetectado: ", saludoDetectado);
       await enviarMensaje(senderNumber, lista);
@@ -265,7 +264,8 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
 5️⃣ Enviar identificación   
 6️⃣ ¿Por qué me piden identificación?   
 7️⃣ Validar pago o correo   
-8️⃣ Comprar boletos`;
+8️⃣ Comprar boletos
+9️⃣ Regresar a la lista de eventos`;
       await enviarMensaje(senderNumber, mes);
       return res.status(200).end();
     }
@@ -285,7 +285,8 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
 5️⃣ Enviar identificación   
 6️⃣ ¿Por qué me piden identificación?   
 7️⃣ Validar pago o correo   
-8️⃣ Comprar boletos`;
+8️⃣ Comprar boletos
+9️⃣ Regresar a la lista de eventos`;
 
       const opcion = userMessage.trim();
       let mess_opt = "";
@@ -356,6 +357,12 @@ Nos permite verificar que el titular de la tarjeta con la que se hizo el pago es
 
 Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a disponibilidad.`;
         await enviarMensaje(senderNumber, mess_opt);
+        return res.status(200).end();
+      } else if (/^9$/.test(opcion)) {
+        await setSesion(senderNumber, {}); // Borra la sesión
+        sesion = await getSesion(senderNumber); // Reinicia vacía
+        await enviarMensaje(senderNumber, mensajeSaludo);
+        await enviarMensaje(senderNumber, lista);
         return res.status(200).end();
       } else {
         await enviarMensaje(senderNumber, mes);
