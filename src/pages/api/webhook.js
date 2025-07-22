@@ -41,8 +41,8 @@ export default async function handler(req, res) {
     let sesion = await getSesion(senderNumber);
 
 
-/*     console.log("Numero: ", senderNumber)
-    console.log("MessageID: ", messageId) */
+    /*     console.log("Numero: ", senderNumber)
+        console.log("MessageID: ", messageId) */
 
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
@@ -146,7 +146,16 @@ Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde
 
     const mensajeSaludo = `👋 ¡Hola! Gracias por contactar a Soporte Boletos.  
 Estamos aquí para ayudarte con cualquier duda sobre tu compra, boletos, fechas o disponibilidad.  
-Por favor indícanos tu número de orden o el evento de tu interés.`;
+Por favor indícanos tu número de orden o el evento de tu interés.
+¿Cómo podemos ayudarte? Elige una opción:
+1️⃣ Ver precios y zonas  
+2️⃣ Consultar fecha del evento  
+3️⃣ Ver disponibilidad  
+4️⃣ No recibí mis boletos   
+5️⃣ Enviar identificación   
+6️⃣ Validar pago o correo   
+7️⃣ Comprar boletos
+8️⃣ Regresar a la lista de eventos`;
 
     const contactoPayload = {
       messaging_product: "whatsapp",
@@ -180,7 +189,6 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
     if (saludoDetectado && saludoDetectado_user) {
       await enviarMensaje(senderNumber, mensajeSaludo);
       console.log("saludoDetectado: ", saludoDetectado);
-      await enviarMensaje(senderNumber, lista);
       return res.status(200).end();
     }
 
@@ -197,7 +205,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
     // Detectar eventos coincidentes con el mensaje del usuario
     let eventosDetectados = [];
 
-    const mensajeUsuarioNormalizado = normalizarTexto(userMessage);  
+    const mensajeUsuarioNormalizado = normalizarTexto(userMessage);
     eventos.forEach((evento, index) => {
       const tituloArtista = evento.title.split(" - ")[0] || evento.title;
       const tituloNormalizado = normalizarTexto(tituloArtista);
@@ -213,7 +221,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       const eventoIndex = eventosDetectados[0].index;
       await setSesion(senderNumber, { eventoIndex });
       sesion = await getSesion(senderNumber);
-     // console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
+      // console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
     } else if (eventosDetectados.length > 1) {
       const opciones = eventosDetectados
         .map((e, i) => `${i + 1}. ${eventos[e.index].title}`)
@@ -239,7 +247,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       const eventoElegidoIndex = sesion.posiblesEventos[seleccion - 1];
       await setSesion(senderNumber, { eventoIndex: eventoElegidoIndex });
       sesion = await getSesion(senderNumber);
-     // console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
+      // console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
 
       const mes = `Elegiste el evento ${eventos[eventoElegidoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
 1️⃣ Ver precios y zonas  
@@ -254,35 +262,27 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       return res.status(200).end();
     }
 
+    //
 
+    const opcion = userMessage.trim();
+    let mess_opt = "";
 
-    if (sesion?.eventoIndex !== undefined) {
-      const evento = eventos[sesion.eventoIndex];
-      console.log("✅ Evento desde Redis:", evento.title);
-      const mes = `Elegiste el evento ${evento.title} ¿Cómo podemos ayudarte? Elige una opción:
-1️⃣ Ver precios y zonas  
-2️⃣ Consultar fecha del evento  
-3️⃣ Ver disponibilidad  
-4️⃣ No recibí mis boletos   
-5️⃣ Enviar identificación   
-6️⃣ Validar pago o correo   
-7️⃣ Comprar boletos
-8️⃣ Regresar a la lista de eventos`;
+    if(opcion == "lista"){
+      await enviarMensaje(senderNumber, lista);
+      return res.status(200).end();
+    }
 
-      const opcion = userMessage.trim();
-      let mess_opt = "";
-
-      if (/^(4|5|6)$/.test(opcion)) {
-        switch (opcion) {
-          case "4":
-            mess_opt = `📩 No recibí mi correo con los boletos
+    if (/^(4|5|6)$/.test(opcion)) {
+      switch (opcion) {
+        case "4":
+          mess_opt = `📩 No recibí mi correo con los boletos
 Lamentamos el inconveniente 😔
 Por favor compártenos el número de orden y el correo con el que realizaste la compra al siguiente contacto para validar el envío.
 
 Mientras tanto, revisa tu bandeja de spam o no deseados. A veces los boletos llegan ahí.`;
-            break;
-          case "5"://cambiar correo
-            mess_opt = `🪪 Problemas para mandar identificación
+          break;
+        case "5"://cambiar correo
+          mess_opt = `🪪 Problemas para mandar identificación
 Si estás teniendo problemas para enviar tu identificación, puedes intentar lo siguiente:
 
 1. Asegúrate de que la imagen esté clara y legible.  
@@ -291,26 +291,34 @@ Si estás teniendo problemas para enviar tu identificación, puedes intentar lo 
 
 Recuerda que solicitar la identificación es un método de seguridad para proteger tu compra.  
 Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la compra.`;
-            break;
-          case "6":
-            mess_opt = `Para validar el pago de tu boleto o validar tu correo, por favor manda mensaje al siguiente contacto:`;
-            break;
-        }
+          break;
+        case "6":
+          mess_opt = `Para validar el pago de tu boleto o validar tu correo, por favor manda mensaje al siguiente contacto:`;
+          break;
+      }
 
-        await enviarMensaje(senderNumber, mess_opt);
+      await enviarMensaje(senderNumber, mess_opt);
 
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(contactoPayload)
-        });
-        await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
+      await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(contactoPayload)
+      });
+      await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
 
-        return res.status(200).end();
-      } else if (/^1$/.test(opcion)) {
+      return res.status(200).end();
+    } else if (/^(1|2|3|7|8)$/.test(opcion)) {
+      
+      if (sesion?.eventoIndex === undefined) {
+        await enviarMensaje(senderNumber, 'Necesita escribir el nombre del evento al cual quiere obtener esta información, en caso de no estar seguro del nombre, escribe "lista" y se mostraran los eventos disponibles');
+        return res.status(200).end();        
+      }
+      const evento = eventos[sesion.eventoIndex];
+      console.log("✅ Evento desde Redis:", evento.title);
+      if (/^1$/.test(opcion)) {
         mess_opt = `Los precios y zonas disponibles para *${evento.title}* son:
 ${replyText}`;
         await enviarMensaje(senderNumber, mess_opt);
@@ -329,7 +337,7 @@ ${evento.link}`;
         await enviarMensaje(senderNumber, mess_opt);
         await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
         return res.status(200).end();
-      }  else if (/^7$/.test(opcion)) {
+      } else if (/^7$/.test(opcion)) {
         mess_opt = `🔗 Enlace para comprar boletos
 🎫 Puedes comprar tus boletos para *${evento.title}* en el siguiente enlace:  
 👉 ${evento.link}
@@ -344,12 +352,10 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
         await enviarMensaje(senderNumber, mensajeSaludo);
         await enviarMensaje(senderNumber, lista);
         return res.status(200).end();
-      } else {
-        await enviarMensaje(senderNumber, mes);
       }
-      return res.status(200).end();
+    } else {
+      await enviarMensaje(senderNumber, mes);
     }
-
 
     /* 
         await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
