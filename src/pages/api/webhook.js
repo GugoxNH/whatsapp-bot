@@ -92,7 +92,7 @@ Reglas:
 - Solo al recibir un saludo, responde con la palabra "hola".
 
 Acciones:
-- Si te escribo el número "1" muestrame la lista de los precios y las zonas del evento seleccionado, agrega los siguientes emojis segun la area DIAMANTE(💎), VIP(🔒), DORADA(👑), AZUL(💙), AMARILLA(💛), ROJA(❤️).
+- Si te escribo el número "1" muestrame la lista de los precios y las zonas del evento seleccionado, agrega los siguientes emojis segun la area (💎) DIAMANTE, (🔒) VIP, (👑) DORADA, (💙) AZUL, (💛) AMARILLA, (❤️) ROJA. Agrega el texto "Más cargos por servicio" después de cada precio.
 - Si te escribo el número "2" muestrame el nombre de el evento en una linea y la fecha del evento en otra linea y el lugar en otra, usa el emoji "📅" para la fecha y el emoji "📍" para el lugar.
 
 Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde "Lo siento, no entendí tu pregunta."
@@ -197,12 +197,10 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
     // Detectar eventos coincidentes con el mensaje del usuario
     let eventosDetectados = [];
 
-    const mensajeUsuarioNormalizado = normalizarTexto(userMessage);
-    console.log("mensajeUsuarioNormalizado: ",mensajeUsuarioNormalizado);
+    const mensajeUsuarioNormalizado = normalizarTexto(userMessage);  
     eventos.forEach((evento, index) => {
       const tituloArtista = evento.title.split(" - ")[0] || evento.title;
       const tituloNormalizado = normalizarTexto(tituloArtista);
-console.log("tituloNormalizado: ",tituloNormalizado)
       if (
         tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
         mensajeUsuarioNormalizado.includes(tituloNormalizado)
@@ -249,10 +247,9 @@ console.log("tituloNormalizado: ",tituloNormalizado)
 3️⃣ Ver disponibilidad  
 4️⃣ No recibí mis boletos   
 5️⃣ Enviar identificación   
-6️⃣ ¿Por qué me piden identificación?   
-7️⃣ Validar pago o correo   
-8️⃣ Comprar boletos
-9️⃣ Regresar a la lista de eventos`;
+6️⃣ Validar pago o correo   
+7️⃣ Comprar boletos
+8️⃣ Regresar a la lista de eventos`;
       await enviarMensaje(senderNumber, mes);
       return res.status(200).end();
     }
@@ -268,10 +265,9 @@ console.log("tituloNormalizado: ",tituloNormalizado)
 3️⃣ Ver disponibilidad  
 4️⃣ No recibí mis boletos   
 5️⃣ Enviar identificación   
-6️⃣ ¿Por qué me piden identificación?   
-7️⃣ Validar pago o correo   
-8️⃣ Comprar boletos
-9️⃣ Regresar a la lista de eventos`;
+6️⃣ Validar pago o correo   
+7️⃣ Comprar boletos
+8️⃣ Regresar a la lista de eventos`;
 
       const opcion = userMessage.trim();
       let mess_opt = "";
@@ -280,7 +276,7 @@ console.log("tituloNormalizado: ",tituloNormalizado)
         switch (opcion) {
           case "4":
             mess_opt = `📩 No recibí mi correo con los boletos
-Lamentamos el inconveniente :( 
+Lamentamos el inconveniente 😔
 Por favor compártenos el número de orden y el correo con el que realizaste la compra al siguiente contacto para validar el envío.
 
 Mientras tanto, revisa tu bandeja de spam o no deseados. A veces los boletos llegan ahí.`;
@@ -291,11 +287,12 @@ Si estás teniendo problemas para enviar tu identificación, puedes intentar lo 
 
 1. Asegúrate de que la imagen esté clara y legible.  
 2. Envía la foto directamente al contacto que se te mandará a continuación.  
+3. Asegúrate de indicar tu número de pedido y correo al enviar tu foto
 
 Recuerda que solicitar la identificación es un método de seguridad para proteger tu compra.  
 Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la compra.`;
             break;
-          case "7":
+          case "6":
             mess_opt = `Para validar el pago de tu boleto o validar tu correo, por favor manda mensaje al siguiente contacto:`;
             break;
         }
@@ -310,6 +307,7 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
           },
           body: JSON.stringify(contactoPayload)
         });
+        await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
 
         return res.status(200).end();
       } else if (/^1$/.test(opcion)) {
@@ -319,6 +317,7 @@ ${replyText}`;
         return res.status(200).end();
       } else if (/^2$/.test(opcion)) {
         await enviarMensaje(senderNumber, replyText);
+        await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
         return res.status(200).end();
       } else if (/^3$/.test(opcion)) {
         mess_opt = `✅El evento de ${evento.title} aún se encuentra disponible, asegurate de darte prisa para conseguir tus boletos
@@ -327,22 +326,18 @@ ${evento.link}`;
         await enviarMensaje(senderNumber, "⌛Comprobando disponibilidad...");
         await sleep(3000);
         await enviarMensaje(senderNumber, mess_opt);
+        await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
         return res.status(200).end();
-      } else if (/^6$/.test(opcion)) {
-        mess_opt = `❓ ¿Por qué me piden identificación?
-La solicitud de identificación es una medida de seguridad para proteger tanto al comprador como al organizador del evento.  
-Nos permite verificar que el titular de la tarjeta con la que se hizo el pago es quien realizó la compra, evitando fraudes o cargos no autorizados.`;
-        await enviarMensaje(senderNumber, mess_opt);
-        return res.status(200).end();
-      } else if (/^8$/.test(opcion)) {
+      }  else if (/^7$/.test(opcion)) {
         mess_opt = `🔗 Enlace para comprar boletos
 🎫 Puedes comprar tus boletos para *${evento.title}* en el siguiente enlace:  
 👉 ${evento.link}
 
 Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a disponibilidad.`;
         await enviarMensaje(senderNumber, mess_opt);
+        await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
         return res.status(200).end();
-      } else if (/^9$/.test(opcion)) {
+      } else if (/^8$/.test(opcion)) {
         await setSesion(senderNumber, {}); // Borra la sesión
         sesion = await getSesion(senderNumber); // Reinicia vacía
         await enviarMensaje(senderNumber, mensajeSaludo);
