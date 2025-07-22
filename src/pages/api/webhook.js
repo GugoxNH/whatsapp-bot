@@ -369,7 +369,7 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
         return res.status(200).end();
       }
     } else {
-      await enviarMensaje(senderNumber, mes);
+      //await enviarMensaje(senderNumber, mes);
     }
 
     /* 
