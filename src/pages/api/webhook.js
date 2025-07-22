@@ -272,7 +272,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.`;
       const opcion = userMessage.trim();
       let mess_opt = "";
 
-      if (/^(4|5|7)$/.test(opcion)) {
+      if (/^(4|5|6)$/.test(opcion)) {
         switch (opcion) {
           case "4":
             mess_opt = `📩 No recibí mi correo con los boletos
@@ -314,6 +314,7 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
         mess_opt = `Los precios y zonas disponibles para *${evento.title}* son:
 ${replyText}`;
         await enviarMensaje(senderNumber, mess_opt);
+        await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
         return res.status(200).end();
       } else if (/^2$/.test(opcion)) {
         await enviarMensaje(senderNumber, replyText);
