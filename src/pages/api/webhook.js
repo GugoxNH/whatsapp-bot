@@ -148,6 +148,7 @@ Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde
 Estamos aquí para ayudarte con cualquier duda sobre tu compra, boletos, fechas o disponibilidad.  
 Por favor indícanos tu número de orden o el evento de tu interés.
 ¿Cómo podemos ayudarte? Elige una opción:
+
 1️⃣ Ver precios y zonas  
 2️⃣ Consultar fecha del evento  
 3️⃣ Ver disponibilidad  
@@ -361,7 +362,6 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
         await setSesion(senderNumber, {}); // Borra la sesión
         sesion = await getSesion(senderNumber); // Reinicia vacía
         await enviarMensaje(senderNumber, mensajeSaludo);
-        await enviarMensaje(senderNumber, lista);
         return res.status(200).end();
       }
     } else {
