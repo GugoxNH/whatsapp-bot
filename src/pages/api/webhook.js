@@ -155,7 +155,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.
 5️⃣ Enviar identificación   
 6️⃣ Validar pago o correo   
 7️⃣ Comprar boletos
-8️⃣ Regresar a la lista de eventos`;
+8️⃣ Elegir un nuevo evento`;
 
     const contactoPayload = {
       messaging_product: "whatsapp",
@@ -229,7 +229,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.
 5️⃣ Enviar identificación   
 6️⃣ Validar pago o correo   
 7️⃣ Comprar boletos
-8️⃣ Regresar a la lista de eventos`;
+8️⃣ Elegir un nuevo evento`;
       await enviarMensaje(senderNumber, mes);
       
       // console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
@@ -268,7 +268,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.
 5️⃣ Enviar identificación   
 6️⃣ Validar pago o correo   
 7️⃣ Comprar boletos
-8️⃣ Regresar a la lista de eventos`;
+8️⃣ Elegir un nuevo evento`;
       await enviarMensaje(senderNumber, mes);
       return res.status(200).end();
     }
@@ -365,7 +365,8 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
         return res.status(200).end();
       }
     } else {
-      await enviarMensaje(senderNumber, mes);
+      //await enviarMensaje(senderNumber, mes);
+      return res.status(200).end();
     }
 
     /* 
