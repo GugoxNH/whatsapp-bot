@@ -209,10 +209,14 @@ Por favor indícanos tu número de orden o el evento de tu interés.
     eventos.forEach((evento, index) => {
       const tituloArtista = evento.title.split(" - ")[0] || evento.title;
       const tituloNormalizado = normalizarTexto(tituloArtista);
-      if (
-        tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
-        mensajeUsuarioNormalizado.includes(tituloNormalizado)
-      ) {
+
+      const palabrasClave = tituloNormalizado.split(/\s+/); // divide en palabras
+
+      const contieneTodas = palabrasClave.every(palabra =>
+        mensajeUsuarioNormalizado.includes(palabra)
+      );
+
+      if (contieneTodas) {
         eventosDetectados.push({ index, titulo: evento.title });
       }
     });
@@ -221,6 +225,17 @@ Por favor indícanos tu número de orden o el evento de tu interés.
       const eventoIndex = eventosDetectados[0].index;
       await setSesion(senderNumber, { eventoIndex });
       sesion = await getSesion(senderNumber);
+      const mes = `Elegiste el evento ${eventos[eventoElegidoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
+1️⃣ Ver precios y zonas  
+2️⃣ Consultar fecha del evento  
+3️⃣ Ver disponibilidad  
+4️⃣ No recibí mis boletos   
+5️⃣ Enviar identificación   
+6️⃣ Validar pago o correo   
+7️⃣ Comprar boletos
+8️⃣ Regresar a la lista de eventos`;
+      await enviarMensaje(senderNumber, mes);
+      return res.status(200).end();
       // console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
     } else if (eventosDetectados.length > 1) {
       const opciones = eventosDetectados
@@ -267,7 +282,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.
     const opcion = userMessage.trim();
     let mess_opt = "";
 
-    if(opcion == "lista"){
+    if (opcion == "lista") {
       await enviarMensaje(senderNumber, lista);
       return res.status(200).end();
     }
@@ -311,10 +326,10 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
 
       return res.status(200).end();
     } else if (/^(1|2|3|7|8)$/.test(opcion)) {
-      
+
       if (sesion?.eventoIndex === undefined) {
         await enviarMensaje(senderNumber, 'Necesita escribir el nombre del evento al cual quiere obtener esta información, en caso de no estar seguro del nombre, escribe "lista" y se mostraran los eventos disponibles');
-        return res.status(200).end();        
+        return res.status(200).end();
       }
       const evento = eventos[sesion.eventoIndex];
       console.log("✅ Evento desde Redis:", evento.title);
