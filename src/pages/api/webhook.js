@@ -221,7 +221,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.
       const eventoIndex = eventosDetectados[0].index;
       await setSesion(senderNumber, { eventoIndex });
       sesion = await getSesion(senderNumber);
-      const mes = `Elegiste el evento ${eventos[eventoElegidoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
+      const mes = `Elegiste el evento ${eventos[eventoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
 1️⃣ Ver precios y zonas  
 2️⃣ Consultar fecha del evento  
 3️⃣ Ver disponibilidad  
