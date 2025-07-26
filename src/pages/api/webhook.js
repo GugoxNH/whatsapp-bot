@@ -155,8 +155,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.
 4️⃣ No recibí mis boletos   
 5️⃣ Enviar identificación   
 6️⃣ Validar pago o correo   
-7️⃣ Comprar boletos
-8️⃣ Elegir un nuevo evento`;
+7️⃣ Comprar boletos`;
 
     const contactoPayload = {
       messaging_product: "whatsapp",
@@ -232,7 +231,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.
 7️⃣ Comprar boletos
 8️⃣ Elegir un nuevo evento`;
       await enviarMensaje(senderNumber, mes);
-      
+
       // console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
     } else if (eventosDetectados.length > 1) {
       const opciones = eventosDetectados
@@ -274,15 +273,25 @@ Por favor indícanos tu número de orden o el evento de tu interés.
       return res.status(200).end();
     }
 
-    //
+
+    function construirPromptParaEvento(userMessage, eventos) {
+      const listaArtistas = eventos.map((e, i) => `${i + 1}. ${e.title.split(" - ")[0]}`).join("\n");
+
+      return `
+El usuario escribió: "${userMessage}"
+
+Tu tarea es identificar si el mensaje hace referencia a algún artista o evento de esta lista. 
+Devuélveme únicamente el índice (empezando desde 0) del evento más relacionado.
+
+Lista de artistas:
+${listaArtistas}
+
+Si no hay coincidencia clara, responde únicamente con: "no".
+`;
+    }
 
     const opcion = userMessage.trim();
     let mess_opt = "";
-
-    if(opcion == "lista"){
-      await enviarMensaje(senderNumber, lista);
-      return res.status(200).end();
-    }
 
     if (/^(4|5|6)$/.test(opcion)) {
       switch (opcion) {
@@ -323,10 +332,10 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
 
       return res.status(200).end();
     } else if (/^(1|2|3|7|8)$/.test(opcion)) {
-      
+
       if (sesion?.eventoIndex === undefined) {
-        await enviarMensaje(senderNumber, 'Necesita escribir el nombre del evento al cual quiere obtener esta información, en caso de no estar seguro del nombre, escribe "lista" y se mostraran los eventos disponibles');
-        return res.status(200).end();        
+        await enviarMensaje(senderNumber, 'Necesita escribir el nombre del evento del cual quiere obtener esta información');
+        return res.status(200).end();
       }
       const evento = eventos[sesion.eventoIndex];
       console.log("✅ Evento desde Redis:", evento.title);
@@ -365,11 +374,11 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
         return res.status(200).end();
       }
     } else {
-      //await enviarMensaje(senderNumber, mes);
+      await enviarMensaje(senderNumber, replyText);
       return res.status(200).end();
     }
 
-    /* 
+    
         await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
           method: "POST",
           headers: {
@@ -382,12 +391,12 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
             type: "text",
             text: {
               preview_url: false,
-              body: replyText,
+              body: "No eh entendido lo que has escrito",
             },
           }),
         });
     
-        return res.status(200).end(); */
+        return res.status(200).end();
   }
   return res.status(405).end();
 }
