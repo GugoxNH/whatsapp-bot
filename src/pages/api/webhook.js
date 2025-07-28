@@ -193,14 +193,14 @@ Por favor indícanos tu número de orden o el evento de tu interés.
     }
 
     // Función para normalizar texto (puedes moverla a un archivo utils si quieres reutilizarla)
-    function normalizarTexto(str) {
+/*     function normalizarTexto(str) {
       return str
         .toLowerCase()
         .normalize("NFD")
         .replace(/[̀-ͯ]/g, "")
         .replace(/[^ñ\w\s]/gi, "")
         .trim();
-    }
+    } */
 
     function construirPromptParaEvento(userMessage, eventos) {
      //const listaArtistas = eventos.map((e, i) => `${i + 1}. ${e.title.split(" - ")[0]}`).join("\n");
