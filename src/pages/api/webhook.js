@@ -138,7 +138,7 @@ Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde
 
     const aiJson = await aiResponse.json();
     let replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
-    const eventosLista = eventos.map(e => `- ${e.title}`).join("\n");
+    //const eventosLista = eventos.map(e => `- ${e.title}`).join("\n");
     //const lista = `🎟️ *Eventos disponibles:*\n${eventosLista}`;
 
     console.log("Respuesta IA: ", replyText);
@@ -201,6 +201,42 @@ Por favor indícanos tu número de orden o el evento de tu interés.
         .replace(/[^ñ\w\s]/gi, "")
         .trim();
     }
+
+    function construirPromptParaEvento(userMessage, eventos) {
+      const listaArtistas = eventos.map((e, i) => `${i + 1}. ${e.title.split(" - ")[0]}`).join("\n");
+
+      return `
+El usuario escribió: "${userMessage}"
+
+Tu tarea es identificar si el mensaje hace referencia a algún artista o evento de esta lista. 
+Devuélveme únicamente el índice (empezando desde 0) del evento más relacionado, si hay dos eventos que coinciden regresa ambos indices separados por una coma.
+
+Lista de artistas:
+${listaArtistas}
+
+Si no hay coincidencia clara, responde únicamente con: "no".
+`;
+    }
+
+    const prompt = construirPromptParaEvento(userMessage, eventos);
+
+const respuestaIA = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    model: "openai/gpt-4o-mini-2024-07-18",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.2
+  })
+});
+
+const data = await respuestaIA.json();
+const contenidoIA = data.choices?.[0]?.message?.content?.trim();
+
+console.log(contenidoIA);
 
     // Detectar eventos coincidentes con el mensaje del usuario
     let eventosDetectados = [];
@@ -274,21 +310,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.
     }
 
 
-    function construirPromptParaEvento(userMessage, eventos) {
-      const listaArtistas = eventos.map((e, i) => `${i + 1}. ${e.title.split(" - ")[0]}`).join("\n");
-
-      return `
-El usuario escribió: "${userMessage}"
-
-Tu tarea es identificar si el mensaje hace referencia a algún artista o evento de esta lista. 
-Devuélveme únicamente el índice (empezando desde 0) del evento más relacionado.
-
-Lista de artistas:
-${listaArtistas}
-
-Si no hay coincidencia clara, responde únicamente con: "no".
-`;
-    }
+    
 
     const opcion = userMessage.trim();
     let mess_opt = "";
