@@ -139,7 +139,7 @@ Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde
     const aiJson = await aiResponse.json();
     let replyText = aiJson.choices?.[0]?.message?.content || "Lo siento, no entendí tu pregunta.";
     const eventosLista = eventos.map(e => `- ${e.title}`).join("\n");
-    const lista = `🎟️ *Eventos disponibles:*\n${eventosLista}`;
+    //const lista = `🎟️ *Eventos disponibles:*\n${eventosLista}`;
 
     console.log("Respuesta IA: ", replyText);
     console.log("Mensaje user: ", userMessage);
@@ -334,7 +334,7 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
     } else if (/^(1|2|3|7|8)$/.test(opcion)) {
 
       if (sesion?.eventoIndex === undefined) {
-        await enviarMensaje(senderNumber, 'Necesita escribir el nombre del evento del cual quiere obtener esta información');
+        await enviarMensaje(senderNumber, 'Necesitas escribir el nombre del evento del cual quiere obtener esta información');
         return res.status(200).end();
       }
       const evento = eventos[sesion.eventoIndex];
