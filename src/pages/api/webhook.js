@@ -203,7 +203,8 @@ Por favor indícanos tu número de orden o el evento de tu interés.
     }
 
     function construirPromptParaEvento(userMessage, eventos) {
-      const listaArtistas = eventos.map((e, i) => `${i + 1}. ${e.title.split(" - ")[0]}`).join("\n");
+     //const listaArtistas = eventos.map((e, i) => `${i + 1}. ${e.title.split(" - ")[0]}`).join("\n");
+      const listaArtistas = eventos.map(e => `${i}. ${e.title}`).join("\n");
 
       return `
 El usuario escribió: "${userMessage}"
@@ -219,6 +220,7 @@ Si no hay coincidencia clara, responde únicamente con: "no".
     }
 
     const prompt = construirPromptParaEvento(userMessage, eventos);
+    console.log(prompt)
 
 const respuestaIA = await fetch("https://openrouter.ai/api/v1/chat/completions", {
   method: "POST",
