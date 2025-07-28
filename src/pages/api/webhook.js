@@ -405,7 +405,10 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
       console.log("✅ Evento desde Redis:", evento.title);
       if (/^1$/.test(opcion)) {
         mess_opt = `Los precios y zonas disponibles para *${evento.title}* son:
-${replyText}`;
+${replyText}
+
+Para adquirir culquier boleto puedes hacerlo desde el siguiente enlace:
+${evento.link}`;
         await enviarMensaje(senderNumber, mess_opt);
         await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
         return res.status(200).end();
