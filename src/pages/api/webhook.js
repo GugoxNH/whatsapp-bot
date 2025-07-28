@@ -204,7 +204,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.
 
     function construirPromptParaEvento(userMessage, eventos) {
      //const listaArtistas = eventos.map((e, i) => `${i + 1}. ${e.title.split(" - ")[0]}`).join("\n");
-      const listaArtistas = eventos.map(e => `${i}. ${e.title}`).join("\n");
+      const listaArtistas = eventos.map((e, i) => `${i}. ${e.title}`).join("\n");
 
       return `
 El usuario escribió: "${userMessage}"
@@ -403,7 +403,7 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
     }
 
     
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+       /*  await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${META_ACCESS_TOKEN}`,
@@ -420,7 +420,7 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
           }),
         });
     
-        return res.status(200).end();
+        return res.status(200).end(); */
   }
   return res.status(405).end();
 }
