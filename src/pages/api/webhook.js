@@ -209,7 +209,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.
       return `
 El usuario escribió: "${userMessage}"
 
-Tu tarea es identificar si el mensaje hace referencia a algún artista o evento de esta lista. 
+Tu tarea es identificar si el mensaje hace referencia a algún artista o evento de esta lista, si recibes un número regresa "no", solo actua cuando recibas un texto. 
 Devuélveme únicamente el índice (empezando desde 0) del evento más relacionado, si hay dos eventos que coinciden regresa ambos indices separados por una coma.
 
 Lista de artistas:
