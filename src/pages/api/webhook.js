@@ -215,7 +215,11 @@ Devuélveme únicamente el índice (empezando desde 0) del evento más relaciona
 Lista de artistas:
 ${listaArtistas}
 
-Si no hay coincidencia clara, responde únicamente con: "no".
+Si no hay coincidencia clara, responde solamente con: "no".
+Ejemplos de respuestas válidas: 
+- 3
+- 5,8
+- no
 `;
     }
 
@@ -238,8 +242,70 @@ const respuestaIA = await fetch("https://openrouter.ai/api/v1/chat/completions",
 const data = await respuestaIA.json();
 const contenidoIA = data.choices?.[0]?.message?.content?.trim();
 
+
 console.log(contenidoIA);
 
+const indicesTexto = contenidoIA.split(",").map(i => parseInt(i.trim())).filter(n => !isNaN(n));
+
+if (indicesTexto.length === 1) {
+  // 🎯 Solo un evento detectado
+  const eventoIndex = indicesTexto[0];
+  await setSesion(senderNumber, { eventoIndex });
+  sesion = await getSesion(senderNumber);
+
+  await enviarMensaje(senderNumber, `Elegiste el evento *${eventos[eventoIndex].title}* ¿Cómo podemos ayudarte? Elige una opción:
+1️⃣ Ver precios y zonas  
+2️⃣ Consultar fecha del evento  
+3️⃣ Ver disponibilidad  
+4️⃣ No recibí mis boletos   
+5️⃣ Enviar identificación   
+6️⃣ Validar pago o correo   
+7️⃣ Comprar boletos
+8️⃣ Elegir un nuevo evento`);
+  return res.status(200).end();
+}
+
+if (indicesTexto.length > 1) {
+  // 🎯 Múltiples eventos detectados
+  const opcionesTexto = indicesTexto.map((i, idx) => `${idx + 1}. ${eventos[i].title}`).join("\n");
+
+  await enviarMensaje(senderNumber, `🎤 El artista tiene varios eventos. Por favor selecciona uno escribiendo el número correspondiente:\n${opcionesTexto}`);
+
+  await setSesion(senderNumber, {
+    posiblesEventos: indicesTexto,
+  });
+  return res.status(200).end();
+}
+
+    const seleccion = parseInt(userMessage.trim());
+
+    if (
+      sesion?.posiblesEventos &&
+      Number.isInteger(seleccion) &&
+      seleccion >= 1 &&
+      seleccion <= sesion.posiblesEventos.length
+    ) {
+      const eventoElegidoIndex = sesion.posiblesEventos[seleccion - 1];
+      await setSesion(senderNumber, { eventoIndex: eventoElegidoIndex });
+      sesion = await getSesion(senderNumber);
+      // console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
+
+      const mes = `Elegiste el evento ${eventos[eventoElegidoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
+1️⃣ Ver precios y zonas  
+2️⃣ Consultar fecha del evento  
+3️⃣ Ver disponibilidad  
+4️⃣ No recibí mis boletos   
+5️⃣ Enviar identificación   
+6️⃣ Validar pago o correo   
+7️⃣ Comprar boletos
+8️⃣ Elegir un nuevo evento`;
+      await enviarMensaje(senderNumber, mes);
+      return res.status(200).end();
+    }
+
+
+
+/* 
     // Detectar eventos coincidentes con el mensaje del usuario
     let eventosDetectados = [];
 
@@ -282,35 +348,9 @@ console.log(contenidoIA);
         posiblesEventos: eventosDetectados.map(e => e.index),
       });
       return res.status(200).end();
-    }
+    } */
 
     // Lógica para cuando el usuario contesta con un número y hay posiblesEventos
-    const seleccion = parseInt(userMessage.trim());
-
-    if (
-      sesion?.posiblesEventos &&
-      Number.isInteger(seleccion) &&
-      seleccion >= 1 &&
-      seleccion <= sesion.posiblesEventos.length
-    ) {
-      const eventoElegidoIndex = sesion.posiblesEventos[seleccion - 1];
-      await setSesion(senderNumber, { eventoIndex: eventoElegidoIndex });
-      sesion = await getSesion(senderNumber);
-      // console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
-
-      const mes = `Elegiste el evento ${eventos[eventoElegidoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
-1️⃣ Ver precios y zonas  
-2️⃣ Consultar fecha del evento  
-3️⃣ Ver disponibilidad  
-4️⃣ No recibí mis boletos   
-5️⃣ Enviar identificación   
-6️⃣ Validar pago o correo   
-7️⃣ Comprar boletos
-8️⃣ Elegir un nuevo evento`;
-      await enviarMensaje(senderNumber, mes);
-      return res.status(200).end();
-    }
-
 
     
 
@@ -398,12 +438,12 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
         return res.status(200).end();
       }
     } else {
-      await enviarMensaje(senderNumber, replyText);
-      return res.status(200).end();
+/*       await enviarMensaje(senderNumber, replyText);
+      return res.status(200).end(); */
     }
 
     
-       /*  await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${META_ACCESS_TOKEN}`,
@@ -415,12 +455,12 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
             type: "text",
             text: {
               preview_url: false,
-              body: "No eh entendido lo que has escrito",
+              body: "No eh entendido lo que has escrito, por favor vuelve a intentarlo",
             },
           }),
         });
     
-        return res.status(200).end(); */
+        return res.status(200).end();
   }
   return res.status(405).end();
 }
