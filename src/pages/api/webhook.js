@@ -49,7 +49,7 @@ export default async function handler(req, res) {
     processedMessages.add(messageId);
 
     // 1. Obtener todos los eventos desde la API
-    const response = await fetch("https://smarticket.pagaboletos.com/wp-json/whatsapp-api/v1/products");
+    const response = await fetch("https://mipase.pagaboletos.com/wp-json/whatsapp-api/v1/products");
     const eventos = await response.json();
 
     // 2. Convertir eventos a texto amigable
