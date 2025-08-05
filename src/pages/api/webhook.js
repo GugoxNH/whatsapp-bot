@@ -2,10 +2,7 @@ import { setSesion, getSesion } from "../../lib/sesion.js";
 import { posthog } from '../../lib/posthog';
 
 
-const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id')
 
-
-console.log("URL:  ", matchedFlagPayload[1].url)
 
 
 const processedMessages = new Set();
@@ -25,6 +22,8 @@ export default async function handler(req, res) {
   const META_ACCESS_TOKEN = process.env.META_ACCESS_TOKEN;
   const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
   const MODEL_NAME = process.env.MODEL_NAME || "deepseek/deepseek-chat";
+
+  
 
   if (req.method === "GET") {
     const mode = req.query["hub.mode"];
@@ -46,6 +45,8 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
+    
+
     let sesion = await getSesion(senderNumber);
 
 
@@ -55,10 +56,23 @@ export default async function handler(req, res) {
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
     processedMessages.add(messageId);
+    let eventos = [];
 
     // 1. Obtener todos los eventos desde la API
-    const response = await fetch("https://mipase.pagaboletos.com/wp-json/whatsapp-api/v1/products");
-    const eventos = await response.json();
+    const isMyFlagEnabledForUser = await posthog.isFeatureEnabled('dynamic-endpoints', 'bot-id')
+
+    if (isMyFlagEnabledForUser) {
+       const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id')
+      console.log("URL:  ", matchedFlagPayload[1].url)
+      matchedFlagPayload.forEach(async endpoint => {
+        let response = await fetch(endpoint.url);
+          eventos += await response.json();
+      });
+    }
+
+    console.log(eventos);
+    
+    
 
     // 2. Convertir eventos a texto amigable
     const eventosTexto = eventos.map((e, i) => {
