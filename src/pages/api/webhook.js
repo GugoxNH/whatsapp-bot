@@ -1,9 +1,11 @@
 import { setSesion, getSesion } from "../../lib/sesion.js";
 import { posthog } from '../../lib/posthog';
 
-const isMyFlagEnabledForUser = await posthog.getFeatureFlag('dynamic-endpoints', 'bot-id');
 
-console.log("URL:  ", isMyFlagEnabledForUser)
+const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id')
+
+
+console.log("URL:  ", matchedFlagPayload)
 
 
 const processedMessages = new Set();
