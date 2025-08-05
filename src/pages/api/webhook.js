@@ -5,7 +5,7 @@ import { posthog } from '../../lib/posthog';
 const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id')
 
 
-console.log("URL:  ", matchedFlagPayload)
+console.log("URL:  ", matchedFlagPayload[1])
 
 
 const processedMessages = new Set();
