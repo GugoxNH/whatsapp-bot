@@ -62,16 +62,19 @@ export default async function handler(req, res) {
     const isMyFlagEnabledForUser = await posthog.isFeatureEnabled('dynamic-endpoints', 'bot-id')
 
     if (isMyFlagEnabledForUser) {
-       const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id')
-      console.log("URL:  ", matchedFlagPayload[1].url)
-      matchedFlagPayload.forEach(async endpoint => {
+       const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id');
+       
+      console.log("num: ", matchedFlagPayload.length)
+      matchedFlagPayload.forEach(async (endpoint, index) => {
+        console.log("URL: ", endpoint.url);
         let response = await fetch(endpoint.url);
+        console.log("eventos url "+index+": ", response);
           eventos += await response.json();
       });
     }
 
-    console.log(eventos);
-    
+    console.log("EVENTOS: ", eventos);
+    return res.status(405).end();
     
 
     // 2. Convertir eventos a texto amigable
