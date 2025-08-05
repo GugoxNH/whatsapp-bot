@@ -497,6 +497,12 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
             return res.status(200).end(); */
     }
 
+    if (saludoDetectado_user) {
+        await setSesion(senderNumber, {}); // Borra la sesión
+        sesion = await getSesion(senderNumber); // Reinicia vacía
+        await enviarMensaje(senderNumber, mensajeSaludo);
+        return res.status(200).end();
+      }
 
     await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
