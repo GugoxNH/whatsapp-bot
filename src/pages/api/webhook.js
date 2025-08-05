@@ -443,6 +443,12 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
       return res.status(200).end();
     } else if (/^(1|2|3|7|8)$/.test(opcion)) {
 
+      const eventosValidos = Array.isArray(eventos) && eventos.length && !eventos[0]?.status;
+      if (!eventosValidos) {
+        await enviarMensaje(senderNumber, 'Por el momento no hay eventos disponibles, por favor intenta con otra opción');
+        return res.status(200).end();
+      }
+
       if (sesion?.eventoIndex === undefined) {
         await enviarMensaje(senderNumber, 'Necesitas escribir el nombre del evento del cual quiere obtener esta información');
         return res.status(200).end();
