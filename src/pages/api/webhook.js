@@ -49,6 +49,7 @@ export default async function handler(req, res) {
     console.log("URL:  ", matchedFlagPayload[1].url)
 
     let sesion = await getSesion(senderNumber);
+    let eventos = [];
 
 
     /*     console.log("Numero: ", senderNumber)
@@ -71,7 +72,7 @@ export default async function handler(req, res) {
       console.log("dataArrays ", dataArrays);
 
       // Combinar todos los arrays en uno solo
-      const eventos = dataArrays.flat();
+      eventos = dataArrays.flat();
       console.log("eventos: ", eventos);
     }
 
