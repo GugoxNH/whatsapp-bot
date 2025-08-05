@@ -62,7 +62,14 @@ export default async function handler(req, res) {
           try {
             const res = await fetch(endpoint.url);
             if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-            return await res.json();
+            const json = await res.json();
+
+            if (json?.status === "desactivado") {
+              console.warn(`⚠️ Ignorado por status desactivado: ${endpoint.url}`);
+              return null;
+            }
+
+            return json;
           } catch (error) {
             console.warn(`❌ Error al consultar: ${endpoint.url}`, error.message);
             return null;
@@ -70,9 +77,9 @@ export default async function handler(req, res) {
         })
       );
 
-      // Extraer solo las respuestas válidas
+      // Extraer solo las respuestas válidas (que no sean null y sean arrays)
       eventos = responses
-        .filter(result => result.status === "fulfilled" && result.value && Array.isArray(result.value))
+        .filter(result => result.status === "fulfilled" && Array.isArray(result.value))
         .flatMap(result => result.value);
 
       if (!eventos.length) {
@@ -81,6 +88,7 @@ export default async function handler(req, res) {
     } else {
       eventos = [{ status: "desactivado" }];
     }
+
 
 
     console.log("EVENTOS: ", eventos);
@@ -498,11 +506,11 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
     }
 
     if (saludoDetectado_user) {
-        await setSesion(senderNumber, {}); // Borra la sesión
-        sesion = await getSesion(senderNumber); // Reinicia vacía
-        await enviarMensaje(senderNumber, mensajeSaludo);
-        return res.status(200).end();
-      }
+      await setSesion(senderNumber, {}); // Borra la sesión
+      sesion = await getSesion(senderNumber); // Reinicia vacía
+      await enviarMensaje(senderNumber, mensajeSaludo);
+      return res.status(200).end();
+    }
 
     await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
       method: "POST",
