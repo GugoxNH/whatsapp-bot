@@ -68,7 +68,7 @@ export default async function handler(req, res) {
         console.log("URL: ", endpoint.url);
         let response = await fetch(endpoint.url);
          console.log("eventos url "+index+": ", await response.json());
-          eventos += await response.json();
+          //eventos += await response.json();
       });
     }
 
