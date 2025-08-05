@@ -1,4 +1,10 @@
 import { setSesion, getSesion } from "../../lib/sesion.js";
+import { posthog } from '../../lib/posthog';
+
+const isMyFlagEnabledForUser = await posthog.isFeatureEnabled('dynamic-endpoints', 'user distinct id');
+
+console.log("URL:  ", isMyFlagEnabledForUser)
+
 
 const processedMessages = new Set();
 setInterval(() => processedMessages.clear(), 1000 * 60 * 5);
