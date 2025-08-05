@@ -41,14 +41,14 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-    const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id')
+    //const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id')
 
     let sesion = await getSesion(senderNumber);
     let eventos = [];
 
 
-        console.log("Numero: ", senderNumber)
-        console.log("MessageID: ", messageId)
+    console.log("Numero: ", senderNumber)
+    console.log("MessageID: ", messageId)
 
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
@@ -62,28 +62,28 @@ export default async function handler(req, res) {
       //const dataArrays = await Promise.all(responses.map(res => res.json()));
 
       const responses = await Promise.allSettled(
-  matchedFlagPayload.map(endpoint =>
-    fetch(endpoint.url).then(res => res.ok ? res.json() : null).catch(() => null)
-  )
-);
+        matchedFlagPayload.map(endpoint =>
+          fetch(endpoint.url).then(res => res.ok ? res.json() : null).catch(() => null)
+        )
+      );
 
- eventos = responses
-  .map(result => result.status === "fulfilled" ? result.value : null)
-  .filter(data => Array.isArray(data) && data.length > 0)
-  .flat();
+      eventos = responses
+        .map(result => result.status === "fulfilled" ? result.value : null)
+        .filter(data => Array.isArray(data) && data.length > 0)
+        .flat();
 
-if (!eventos.length) {
-  eventos.push({ status: "desactivado" });
-}
+      if (!eventos.length) {
+        eventos.push({ status: "desactivado" });
+      }
       // Combinar todos los arrays en uno solo
-     // eventos = dataArrays.flat();
+      // eventos = dataArrays.flat();
     }
 
     console.log("EVENTOS: ", eventos);
 
-   /*  /
-    const response = await fetch("https://mipase.pagaboletos.com/wp-json/whatsapp-api/v1/products");
-    const eventos = await response.json(); */
+    /*  /
+     const response = await fetch("https://mipase.pagaboletos.com/wp-json/whatsapp-api/v1/products");
+     const eventos = await response.json(); */
 
     // 2. Convertir eventos a texto amigable
     const eventosTexto = eventos.map((e, i) => {
@@ -175,7 +175,7 @@ Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde
     //const lista = `🎟️ *Eventos disponibles:*\n${eventosLista}`;
 
     //console.log("Respuesta IA: ", replyText);
-   // console.log("Mensaje user: ", userMessage);
+    // console.log("Mensaje user: ", userMessage);
 
     const mensajeSaludo = `👋 ¡Hola! Gracias por contactar a Soporte Boletos.  
 Estamos aquí para ayudarte con cualquier duda sobre tu compra, boletos, fechas o disponibilidad.  
