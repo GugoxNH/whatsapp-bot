@@ -57,30 +57,30 @@ export default async function handler(req, res) {
     //const isMyFlagEnabledForUser = await posthog.isFeatureEnabled('dynamic-endpoints', 'bot-id')
 
     if (Array.isArray(matchedFlagPayload) && matchedFlagPayload.length > 0) {
-  const responses = await Promise.allSettled(
-    matchedFlagPayload.map(async (endpoint) => {
-      try {
-        const res = await fetch(endpoint.url);
-        if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
-        return await res.json();
-      } catch (error) {
-        console.warn(`❌ Error al consultar: ${endpoint.url}`, error.message);
-        return null;
+      const responses = await Promise.allSettled(
+        matchedFlagPayload.map(async (endpoint) => {
+          try {
+            const res = await fetch(endpoint.url);
+            if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+            return await res.json();
+          } catch (error) {
+            console.warn(`❌ Error al consultar: ${endpoint.url}`, error.message);
+            return null;
+          }
+        })
+      );
+
+      // Extraer solo las respuestas válidas
+      eventos = responses
+        .filter(result => result.status === "fulfilled" && result.value && Array.isArray(result.value))
+        .flatMap(result => result.value);
+
+      if (!eventos.length) {
+        eventos = [{ status: "desactivado" }];
       }
-    })
-  );
-
-  // Extraer solo las respuestas válidas
-  eventos = responses
-    .filter(result => result.status === "fulfilled" && result.value && Array.isArray(result.value))
-    .flatMap(result => result.value);
-
-  if (!eventos.length) {
-    eventos = [{ status: "desactivado" }];
-  }
-} else {
-  eventos = [{ status: "desactivado" }];
-}
+    } else {
+      eventos = [{ status: "desactivado" }];
+    }
 
 
     console.log("EVENTOS: ", eventos);
@@ -91,37 +91,42 @@ export default async function handler(req, res) {
 
     // 2. Convertir eventos a texto amigable
     let eventosTexto = "No hay eventos disponibles";
-    if(eventos.status != "desactivado"){
+    let evento_select = "";
 
-     eventosTexto = eventos.map((e, i) => {
-      const zonas = e.variations
-        .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
-        .join("\n");
+    // Verifica si eventos tiene datos válidos (que no sea solo el objeto de desactivado)
+    const eventosValidos = Array.isArray(eventos) && eventos.length && !eventos[0]?.status;
 
-      return `Evento ${i + 1}:
+    if (eventosValidos) {
+      // Convertir eventos a texto amigable
+      eventosTexto = eventos.map((e, i) => {
+        const zonas = e.variations
+          .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
+          .join("\n");
+
+        return `Evento ${i + 1}:
 Título: ${e.title}
 Link: ${e.link}
 Zonas:
 ${zonas}
 `;
-    }).join("\n");
+      }).join("\n");
 
-    let evento_select = "";
-    if (sesion?.eventoIndex !== undefined) {
-      const evento_aux = eventos[sesion.eventoIndex];
-      const zonas = evento_aux.variations
-        .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
-        .join("\n");
-    
-    }
+      // Mostrar evento seleccionado si hay sesión válida
+      if (sesion?.eventoIndex !== undefined) {
+        const evento_aux = eventos[sesion.eventoIndex];
+        const zonas = evento_aux.variations
+          .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
+          .join("\n");
 
-      evento_select = `Este es el evento que seleccione:
+        evento_select = `Este es el evento que seleccione:
 Título: ${evento_aux.title}
 Link: ${evento_aux.link}
 Zonas:
 ${zonas}
 `;
+      }
     }
+
     // 3. Crear contexto completo para IA
     const contexto = `Tu trabajo es ayudar a los usuarios a encontrar eventos disponibles y guiarlos con información útil.
 Aquí está la lista completa de eventos disponibles con todos los detalles:
