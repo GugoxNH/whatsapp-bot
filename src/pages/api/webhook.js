@@ -73,18 +73,11 @@ export default async function handler(req, res) {
       // Combinar todos los arrays en uno solo
       const eventos = dataArrays.flat();
       console.log("eventos: ", eventos);
-  /*     matchedFlagPayload.forEach(async (endpoint, index) => {
-        console.log("URL: ", endpoint.url);
-        let response = await fetch(endpoint.url);
-        console.log("eventos url " + index + ": ", await response.json());
-        //eventos += await response.json();
-      }); */
     }
 
-    //console.log("EVENTOS: ", eventos);
-    return res.status(405).end();
+   /*  /
     const response = await fetch("https://mipase.pagaboletos.com/wp-json/whatsapp-api/v1/products");
-    const eventos = await response.json();
+    const eventos = await response.json(); */
 
     // 2. Convertir eventos a texto amigable
     const eventosTexto = eventos.map((e, i) => {
