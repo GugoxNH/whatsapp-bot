@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-    //const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id')
+    const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id')
 
     let sesion = await getSesion(senderNumber);
     let eventos = [];
@@ -54,30 +54,34 @@ export default async function handler(req, res) {
     if (processedMessages.has(messageId)) return res.status(200).end();
     processedMessages.add(messageId);
 
-    const isMyFlagEnabledForUser = await posthog.isFeatureEnabled('dynamic-endpoints', 'bot-id')
+    //const isMyFlagEnabledForUser = await posthog.isFeatureEnabled('dynamic-endpoints', 'bot-id')
 
-    if (isMyFlagEnabledForUser) {
-      const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id');
-      //const responses = await Promise.all(matchedFlagPayload.map(endpoint => fetch(endpoint.url)));
-      //const dataArrays = await Promise.all(responses.map(res => res.json()));
-
-      const responses = await Promise.allSettled(
-        matchedFlagPayload.map(endpoint =>
-          fetch(endpoint.url).then(res => res.ok ? res.json() : null).catch(() => null)
-        )
-      );
-
-      eventos = responses
-        .map(result => result.status === "fulfilled" ? result.value : null)
-        .filter(data => Array.isArray(data) && data.length > 0)
-        .flat();
-
-      if (!eventos.length) {
-        eventos.push({ status: "desactivado" });
+    if (Array.isArray(matchedFlagPayload) && matchedFlagPayload.length > 0) {
+  const responses = await Promise.allSettled(
+    matchedFlagPayload.map(async (endpoint) => {
+      try {
+        const res = await fetch(endpoint.url);
+        if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
+        return await res.json();
+      } catch (error) {
+        console.warn(`❌ Error al consultar: ${endpoint.url}`, error.message);
+        return null;
       }
-      // Combinar todos los arrays en uno solo
-      // eventos = dataArrays.flat();
-    }
+    })
+  );
+
+  // Extraer solo las respuestas válidas
+  eventos = responses
+    .filter(result => result.status === "fulfilled" && result.value && Array.isArray(result.value))
+    .flatMap(result => result.value);
+
+  if (!eventos.length) {
+    eventos = [{ status: "desactivado" }];
+  }
+} else {
+  eventos = [{ status: "desactivado" }];
+}
+
 
     console.log("EVENTOS: ", eventos);
 
@@ -490,7 +494,7 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
         type: "text",
         text: {
           preview_url: false,
-          body: 'No eh entendido lo que has escrito, por favor vuelve a intentarlo. Si quieres volver a ver el menú escribre "menú"',
+          body: 'No eh entendido lo que has escrito, por favor vuelve a intentarlo. Si quieres volver a ver el menú escribe "menú"',
         },
       }),
     });
