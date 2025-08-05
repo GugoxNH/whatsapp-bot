@@ -72,7 +72,7 @@ export default async function handler(req, res) {
       });
     }
 
-    console.log("EVENTOS: ", eventos);
+    //console.log("EVENTOS: ", eventos);
     return res.status(405).end();
     const response = await fetch("https://mipase.pagaboletos.com/wp-json/whatsapp-api/v1/products");
     const eventos = await response.json();
