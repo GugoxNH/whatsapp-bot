@@ -45,7 +45,8 @@ export default async function handler(req, res) {
     const senderNumber = messageObj?.from;
     const messageId = messageObj?.id;
 
-    
+    const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id')
+    console.log("URL:  ", matchedFlagPayload[1].url)
 
     let sesion = await getSesion(senderNumber);
 
@@ -56,9 +57,7 @@ export default async function handler(req, res) {
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
     processedMessages.add(messageId);
-    let eventos = [];
 
-    // 1. Obtener todos los eventos desde la API
     const isMyFlagEnabledForUser = await posthog.isFeatureEnabled('dynamic-endpoints', 'bot-id')
 
     if (isMyFlagEnabledForUser) {
@@ -68,14 +67,15 @@ export default async function handler(req, res) {
       matchedFlagPayload.forEach(async (endpoint, index) => {
         console.log("URL: ", endpoint.url);
         let response = await fetch(endpoint.url);
-        console.log("eventos url "+index+": ", response);
+         console.log("eventos url "+index+": ", await response.json());
           eventos += await response.json();
       });
     }
 
     console.log("EVENTOS: ", eventos);
     return res.status(405).end();
-    
+    const response = await fetch("https://mipase.pagaboletos.com/wp-json/whatsapp-api/v1/products");
+    const eventos = await response.json();
 
     // 2. Convertir eventos a texto amigable
     const eventosTexto = eventos.map((e, i) => {
