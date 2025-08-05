@@ -90,7 +90,10 @@ export default async function handler(req, res) {
      const eventos = await response.json(); */
 
     // 2. Convertir eventos a texto amigable
-    const eventosTexto = eventos.map((e, i) => {
+    let eventosTexto = "No hay eventos disponibles";
+    if(eventos.status != "desactivado"){
+
+     eventosTexto = eventos.map((e, i) => {
       const zonas = e.variations
         .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
         .join("\n");
@@ -109,6 +112,8 @@ ${zonas}
       const zonas = evento_aux.variations
         .map(v => `- ${v.attributes["attribute_zonas"]} (${v.regular_price} MXN)`)
         .join("\n");
+    
+    }
 
       evento_select = `Este es el evento que seleccione:
 Título: ${evento_aux.title}
