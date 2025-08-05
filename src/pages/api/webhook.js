@@ -1,10 +1,6 @@
 import { setSesion, getSesion } from "../../lib/sesion.js";
 import { posthog } from '../../lib/posthog';
 
-
-
-
-
 const processedMessages = new Set();
 setInterval(() => processedMessages.clear(), 1000 * 60 * 5);
 
@@ -46,14 +42,13 @@ export default async function handler(req, res) {
     const messageId = messageObj?.id;
 
     const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id')
-    console.log("URL:  ", matchedFlagPayload[1].url)
 
     let sesion = await getSesion(senderNumber);
     let eventos = [];
 
 
-    /*     console.log("Numero: ", senderNumber)
-        console.log("MessageID: ", messageId) */
+        console.log("Numero: ", senderNumber)
+        console.log("MessageID: ", messageId)
 
     if (!userMessage || !senderNumber || !messageId) return res.status(200).end();
     if (processedMessages.has(messageId)) return res.status(200).end();
@@ -63,18 +58,28 @@ export default async function handler(req, res) {
 
     if (isMyFlagEnabledForUser) {
       const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id');
+      //const responses = await Promise.all(matchedFlagPayload.map(endpoint => fetch(endpoint.url)));
+      //const dataArrays = await Promise.all(responses.map(res => res.json()));
 
-      console.log("num: ", matchedFlagPayload.length);
-      const responses = await Promise.all(matchedFlagPayload.map(endpoint => fetch(endpoint.url)));
-      console.log("eventos url: ", responses);
+      const responses = await Promise.allSettled(
+  matchedFlagPayload.map(endpoint =>
+    fetch(endpoint.url).then(res => res.ok ? res.json() : null).catch(() => null)
+  )
+);
 
-      const dataArrays = await Promise.all(responses.map(res => res.json()));
-      console.log("dataArrays ", dataArrays);
+ eventos = responses
+  .map(result => result.status === "fulfilled" ? result.value : null)
+  .filter(data => Array.isArray(data) && data.length > 0)
+  .flat();
 
+if (!eventos.length) {
+  eventos.push({ status: "desactivado" });
+}
       // Combinar todos los arrays en uno solo
-      eventos = dataArrays.flat();
-      console.log("eventos: ", eventos);
+     // eventos = dataArrays.flat();
     }
+
+    console.log("EVENTOS: ", eventos);
 
    /*  /
     const response = await fetch("https://mipase.pagaboletos.com/wp-json/whatsapp-api/v1/products");
@@ -169,8 +174,8 @@ Solo responde al saludo y a esos dos números, cualquier otra cosa solo responde
     //const eventosLista = eventos.map(e => `- ${e.title}`).join("\n");
     //const lista = `🎟️ *Eventos disponibles:*\n${eventosLista}`;
 
-    console.log("Respuesta IA: ", replyText);
-    console.log("Mensaje user: ", userMessage);
+    //console.log("Respuesta IA: ", replyText);
+   // console.log("Mensaje user: ", userMessage);
 
     const mensajeSaludo = `👋 ¡Hola! Gracias por contactar a Soporte Boletos.  
 Estamos aquí para ayudarte con cualquier duda sobre tu compra, boletos, fechas o disponibilidad.  
@@ -212,11 +217,10 @@ Por favor indícanos tu número de orden o el evento de tu interés.
     };
 
     const saludoDetectado = /(hola|bienvenido|gracias por escribirnos|gracias por contactar)/i.test(replyText);
-    const saludoDetectado_user = /(hola|informacion|eventos|saludos)/i.test(userMessage);
+    const saludoDetectado_user = /(hola|informacion|menú|menu|Menu|saludos)/i.test(userMessage);
     //Primer mensaje de la la lista
     if (saludoDetectado && saludoDetectado_user) {
       await enviarMensaje(senderNumber, mensajeSaludo);
-      console.log("saludoDetectado: ", saludoDetectado);
       return res.status(200).end();
     }
 
@@ -252,7 +256,7 @@ Ejemplos de respuestas válidas:
     }
 
     const prompt = construirPromptParaEvento(userMessage, eventos);
-    console.log(prompt)
+    //console.log(prompt)
 
     const respuestaIA = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -271,7 +275,7 @@ Ejemplos de respuestas válidas:
     const contenidoIA = data.choices?.[0]?.message?.content?.trim();
 
 
-    console.log(contenidoIA);
+    //console.log(contenidoIA);
 
     const indicesTexto = contenidoIA.split(",").map(i => parseInt(i.trim())).filter(n => !isNaN(n));
 
@@ -430,7 +434,7 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
         return res.status(200).end();
       }
       const evento = eventos[sesion.eventoIndex];
-      console.log("✅ Evento desde Redis:", evento.title);
+      //console.log("✅ Evento desde Redis:", evento.title);
       if (/^1$/.test(opcion)) {
         mess_opt = `Los precios y zonas disponibles para *${evento.title}* son:
 ${replyText}
@@ -486,7 +490,7 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
         type: "text",
         text: {
           preview_url: false,
-          body: "No eh entendido lo que has escrito, por favor vuelve a intentarlo",
+          body: 'No eh entendido lo que has escrito, por favor vuelve a intentarlo. Si quieres volver a ver el menú escribre "menú"',
         },
       }),
     });
