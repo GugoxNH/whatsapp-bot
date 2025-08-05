@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   const PHONE_NUMBER_ID = process.env.PHONE_NUMBER_ID;
   const MODEL_NAME = process.env.MODEL_NAME || "deepseek/deepseek-chat";
 
-  
+
 
   if (req.method === "GET") {
     const mode = req.query["hub.mode"];
@@ -61,15 +61,24 @@ export default async function handler(req, res) {
     const isMyFlagEnabledForUser = await posthog.isFeatureEnabled('dynamic-endpoints', 'bot-id')
 
     if (isMyFlagEnabledForUser) {
-       const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id');
-       
-      console.log("num: ", matchedFlagPayload.length)
-      matchedFlagPayload.forEach(async (endpoint, index) => {
+      const matchedFlagPayload = await posthog.getFeatureFlagPayload('dynamic-endpoints', 'bot-id');
+
+      console.log("num: ", matchedFlagPayload.length);
+      const responses = await Promise.all(matchedFlagPayload.map(endpoint => fetch(endpoint.url)));
+      console.log("eventos url: ", responses);
+
+      const dataArrays = await Promise.all(responses.map(res => res.json()));
+      console.log("dataArrays ", dataArrays);
+
+      // Combinar todos los arrays en uno solo
+      const eventos = dataArrays.flat();
+      console.log("eventos: ", eventos);
+  /*     matchedFlagPayload.forEach(async (endpoint, index) => {
         console.log("URL: ", endpoint.url);
         let response = await fetch(endpoint.url);
-         console.log("eventos url "+index+": ", await response.json());
-          //eventos += await response.json();
-      });
+        console.log("eventos url " + index + ": ", await response.json());
+        //eventos += await response.json();
+      }); */
     }
 
     //console.log("EVENTOS: ", eventos);
@@ -218,17 +227,17 @@ Por favor indícanos tu número de orden o el evento de tu interés.
     }
 
     // Función para normalizar texto (puedes moverla a un archivo utils si quieres reutilizarla)
-/*     function normalizarTexto(str) {
-      return str
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[̀-ͯ]/g, "")
-        .replace(/[^ñ\w\s]/gi, "")
-        .trim();
-    } */
+    /*     function normalizarTexto(str) {
+          return str
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/[̀-ͯ]/g, "")
+            .replace(/[^ñ\w\s]/gi, "")
+            .trim();
+        } */
 
     function construirPromptParaEvento(userMessage, eventos) {
-     //const listaArtistas = eventos.map((e, i) => `${i + 1}. ${e.title.split(" - ")[0]}`).join("\n");
+      //const listaArtistas = eventos.map((e, i) => `${i + 1}. ${e.title.split(" - ")[0]}`).join("\n");
       const listaArtistas = eventos.map((e, i) => `${i}. ${e.title}`).join("\n");
 
       return `
@@ -251,34 +260,34 @@ Ejemplos de respuestas válidas:
     const prompt = construirPromptParaEvento(userMessage, eventos);
     console.log(prompt)
 
-const respuestaIA = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-  method: "POST",
-  headers: {
-    "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    model: "openai/gpt-4o-mini-2024-07-18",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.2
-  })
-});
+    const respuestaIA = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-4o-mini-2024-07-18",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.2
+      })
+    });
 
-const data = await respuestaIA.json();
-const contenidoIA = data.choices?.[0]?.message?.content?.trim();
+    const data = await respuestaIA.json();
+    const contenidoIA = data.choices?.[0]?.message?.content?.trim();
 
 
-console.log(contenidoIA);
+    console.log(contenidoIA);
 
-const indicesTexto = contenidoIA.split(",").map(i => parseInt(i.trim())).filter(n => !isNaN(n));
+    const indicesTexto = contenidoIA.split(",").map(i => parseInt(i.trim())).filter(n => !isNaN(n));
 
-if (indicesTexto.length === 1) {
-  // 🎯 Solo un evento detectado
-  const eventoIndex = indicesTexto[0];
-  await setSesion(senderNumber, { eventoIndex });
-  sesion = await getSesion(senderNumber);
+    if (indicesTexto.length === 1) {
+      // 🎯 Solo un evento detectado
+      const eventoIndex = indicesTexto[0];
+      await setSesion(senderNumber, { eventoIndex });
+      sesion = await getSesion(senderNumber);
 
-  await enviarMensaje(senderNumber, `Elegiste el evento *${eventos[eventoIndex].title}* ¿Cómo podemos ayudarte? Elige una opción:
+      await enviarMensaje(senderNumber, `Elegiste el evento *${eventos[eventoIndex].title}* ¿Cómo podemos ayudarte? Elige una opción:
 1️⃣ Ver precios y zonas  
 2️⃣ Consultar fecha del evento  
 3️⃣ Ver disponibilidad  
@@ -287,20 +296,20 @@ if (indicesTexto.length === 1) {
 6️⃣ Validar pago o correo   
 7️⃣ Comprar boletos
 8️⃣ Elegir un nuevo evento`);
-  return res.status(200).end();
-}
+      return res.status(200).end();
+    }
 
-if (indicesTexto.length > 1) {
-  // 🎯 Múltiples eventos detectados
-  const opcionesTexto = indicesTexto.map((i, idx) => `${idx + 1}. ${eventos[i].title}`).join("\n");
+    if (indicesTexto.length > 1) {
+      // 🎯 Múltiples eventos detectados
+      const opcionesTexto = indicesTexto.map((i, idx) => `${idx + 1}. ${eventos[i].title}`).join("\n");
 
-  await enviarMensaje(senderNumber, `🎤 El artista tiene varios eventos. Por favor selecciona uno escribiendo el número correspondiente:\n${opcionesTexto}`);
+      await enviarMensaje(senderNumber, `🎤 El artista tiene varios eventos. Por favor selecciona uno escribiendo el número correspondiente:\n${opcionesTexto}`);
 
-  await setSesion(senderNumber, {
-    posiblesEventos: indicesTexto,
-  });
-  return res.status(200).end();
-}
+      await setSesion(senderNumber, {
+        posiblesEventos: indicesTexto,
+      });
+      return res.status(200).end();
+    }
 
     const seleccion = parseInt(userMessage.trim());
 
@@ -330,54 +339,54 @@ if (indicesTexto.length > 1) {
 
 
 
-/* 
-    // Detectar eventos coincidentes con el mensaje del usuario
-    let eventosDetectados = [];
-
-    const mensajeUsuarioNormalizado = normalizarTexto(userMessage);
-    eventos.forEach((evento, index) => {
-      const tituloArtista = evento.title.split(" - ")[0] || evento.title;
-      const tituloNormalizado = normalizarTexto(tituloArtista);
-      if (
-        tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
-        mensajeUsuarioNormalizado.includes(tituloNormalizado)
-      ) {
-        eventosDetectados.push({ index, titulo: evento.title });
-      }
-    });
-
-    if (eventosDetectados.length === 1) {
-      const eventoIndex = eventosDetectados[0].index;
-      await setSesion(senderNumber, { eventoIndex });
-      sesion = await getSesion(senderNumber);
-      const mes = `Elegiste el evento ${eventos[eventoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
-1️⃣ Ver precios y zonas  
-2️⃣ Consultar fecha del evento  
-3️⃣ Ver disponibilidad  
-4️⃣ No recibí mis boletos   
-5️⃣ Enviar identificación   
-6️⃣ Validar pago o correo   
-7️⃣ Comprar boletos
-8️⃣ Elegir un nuevo evento`;
-      await enviarMensaje(senderNumber, mes);
-
-      // console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
-    } else if (eventosDetectados.length > 1) {
-      const opciones = eventosDetectados
-        .map((e, i) => `${i + 1}. ${eventos[e.index].title}`)
-        .join("\n");
-
-      await enviarMensaje(senderNumber, `🎤 El artista tiene varios eventos. Por favor selecciona uno escribiendo el número correspondiente:\n${opciones}`);
-
-      await setSesion(senderNumber, {
-        posiblesEventos: eventosDetectados.map(e => e.index),
-      });
-      return res.status(200).end();
-    } */
+    /* 
+        // Detectar eventos coincidentes con el mensaje del usuario
+        let eventosDetectados = [];
+    
+        const mensajeUsuarioNormalizado = normalizarTexto(userMessage);
+        eventos.forEach((evento, index) => {
+          const tituloArtista = evento.title.split(" - ")[0] || evento.title;
+          const tituloNormalizado = normalizarTexto(tituloArtista);
+          if (
+            tituloNormalizado.includes(mensajeUsuarioNormalizado) ||
+            mensajeUsuarioNormalizado.includes(tituloNormalizado)
+          ) {
+            eventosDetectados.push({ index, titulo: evento.title });
+          }
+        });
+    
+        if (eventosDetectados.length === 1) {
+          const eventoIndex = eventosDetectados[0].index;
+          await setSesion(senderNumber, { eventoIndex });
+          sesion = await getSesion(senderNumber);
+          const mes = `Elegiste el evento ${eventos[eventoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
+    1️⃣ Ver precios y zonas  
+    2️⃣ Consultar fecha del evento  
+    3️⃣ Ver disponibilidad  
+    4️⃣ No recibí mis boletos   
+    5️⃣ Enviar identificación   
+    6️⃣ Validar pago o correo   
+    7️⃣ Comprar boletos
+    8️⃣ Elegir un nuevo evento`;
+          await enviarMensaje(senderNumber, mes);
+    
+          // console.log("🎯 Evento único detectado:", eventos[eventoIndex].title);
+        } else if (eventosDetectados.length > 1) {
+          const opciones = eventosDetectados
+            .map((e, i) => `${i + 1}. ${eventos[e.index].title}`)
+            .join("\n");
+    
+          await enviarMensaje(senderNumber, `🎤 El artista tiene varios eventos. Por favor selecciona uno escribiendo el número correspondiente:\n${opciones}`);
+    
+          await setSesion(senderNumber, {
+            posiblesEventos: eventosDetectados.map(e => e.index),
+          });
+          return res.status(200).end();
+        } */
 
     // Lógica para cuando el usuario contesta con un número y hay posiblesEventos
 
-    
+
 
     const opcion = userMessage.trim();
     let mess_opt = "";
@@ -466,29 +475,29 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
         return res.status(200).end();
       }
     } else {
-/*       await enviarMensaje(senderNumber, replyText);
-      return res.status(200).end(); */
+      /*       await enviarMensaje(senderNumber, replyText);
+            return res.status(200).end(); */
     }
 
-    
-        await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${META_ACCESS_TOKEN}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            to: senderNumber,
-            type: "text",
-            text: {
-              preview_url: false,
-              body: "No eh entendido lo que has escrito, por favor vuelve a intentarlo",
-            },
-          }),
-        });
-    
-        return res.status(200).end();
+
+    await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${META_ACCESS_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messaging_product: "whatsapp",
+        to: senderNumber,
+        type: "text",
+        text: {
+          preview_url: false,
+          body: "No eh entendido lo que has escrito, por favor vuelve a intentarlo",
+        },
+      }),
+    });
+
+    return res.status(200).end();
   }
   return res.status(405).end();
 }
