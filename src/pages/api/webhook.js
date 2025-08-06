@@ -210,7 +210,8 @@ Por favor indícanos tu número de orden o el evento de tu interés.
 4️⃣ No recibí mis boletos   
 5️⃣ Enviar identificación   
 6️⃣ Validar pago o correo   
-7️⃣ Comprar boletos`;
+7️⃣ Comprar boletos
+8️⃣ Por que no pasa mi pago`;
 
     const contactoPayload = {
       messaging_product: "whatsapp",
@@ -315,7 +316,8 @@ Ejemplos de respuestas válidas:
 5️⃣ Enviar identificación   
 6️⃣ Validar pago o correo   
 7️⃣ Comprar boletos
-8️⃣ Elegir un nuevo evento`);
+8️⃣ Por que no pasa mi pago
+9️⃣ Elegir otro evento`);
       return res.status(200).end();
     }
 
@@ -352,7 +354,8 @@ Ejemplos de respuestas válidas:
 5️⃣ Enviar identificación   
 6️⃣ Validar pago o correo   
 7️⃣ Comprar boletos
-8️⃣ Elegir un nuevo evento`;
+8️⃣ Por que no pasa mi pago
+9️⃣ Elegir otro evento`;
       await enviarMensaje(senderNumber, mes);
       return res.status(200).end();
     }
@@ -495,6 +498,15 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
         await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
         return res.status(200).end();
       } else if (/^8$/.test(opcion)) {
+        mess_opt = `Si tu pago fue rechazado, te recomendamos lo siguiente:
+	1.	Verifica que ingresaste correctamente la fecha de vencimiento y el código de seguridad (CVV).
+	2.	Asegúrate de contar con fondos suficientes y de estar utilizando tu tarjeta digital, si es requerida por tu banco.
+	3.	Revisa tu app bancaria o tus mensajes SMS, ya que en muchos casos tu banco envía un código de verificación o una alerta de seguridad que debes autorizar para completar la compra.
+	4.	Evita intentar la compra repetidamente, ya que esto puede provocar el bloqueo temporal de tu tarjeta. En ese caso, comunícate directamente con tu banco y solicita que autoricen el cargo de forma manual.`;
+        await enviarMensaje(senderNumber, mess_opt);
+        await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
+        return res.status(200).end();
+      } else if (/^9$/.test(opcion)) {
         await setSesion(senderNumber, {}); // Borra la sesión
         sesion = await getSesion(senderNumber); // Reinicia vacía
         await enviarMensaje(senderNumber, mensajeSaludo);
