@@ -439,14 +439,15 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
           break;
         case "8":
           mess_opt = `Si tu pago fue rechazado, te recomendamos lo siguiente:
-	1.	Verifica que ingresaste correctamente la fecha de vencimiento y el código de seguridad (CVV).
-	2.	Asegúrate de contar con fondos suficientes y de estar utilizando tu tarjeta digital, si es requerida por tu banco.
-	3.	Revisa tu app bancaria o tus mensajes SMS, ya que en muchos casos tu banco envía un código de verificación o una alerta de seguridad que debes autorizar para completar la compra.
-	4.	Evita intentar la compra repetidamente, ya que esto puede provocar el bloqueo temporal de tu tarjeta. En ese caso, comunícate directamente con tu banco y solicita que autoricen el cargo de forma manual.`;
+1.	Verifica que ingresaste correctamente la fecha de vencimiento y el código de seguridad (CVV).
+2.	Asegúrate de contar con fondos suficientes y de estar utilizando tu tarjeta digital, si es requerida por tu banco.
+3.	Revisa tu app bancaria o tus mensajes SMS, ya que en muchos casos tu banco envía un código de verificación o una alerta de seguridad que debes autorizar para completar la compra.
+4.	Evita intentar la compra repetidamente, ya que esto puede provocar el bloqueo temporal de tu tarjeta. En ese caso, comunícate directamente con tu banco y solicita que autoricen el cargo de forma manual.`;
           break;
       }
       await enviarMensaje(senderNumber, mess_opt);
 
+      if(opcion != "8")
       await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
         method: "POST",
         headers: {
