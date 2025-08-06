@@ -414,7 +414,7 @@ Ejemplos de respuestas válidas:
     const opcion = userMessage.trim();
     let mess_opt = "";
 
-    if (/^(4|5|6)$/.test(opcion)) {
+    if (/^(4|5|6|8)$/.test(opcion)) {
       switch (opcion) {
         case "4":
           mess_opt = `📩 No recibí mi correo con los boletos
@@ -437,8 +437,14 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
         case "6":
           mess_opt = `Para validar el pago de tu boleto o validar tu correo, por favor manda mensaje al siguiente contacto:`;
           break;
+        case "8":
+          mess_opt = `Si tu pago fue rechazado, te recomendamos lo siguiente:
+	1.	Verifica que ingresaste correctamente la fecha de vencimiento y el código de seguridad (CVV).
+	2.	Asegúrate de contar con fondos suficientes y de estar utilizando tu tarjeta digital, si es requerida por tu banco.
+	3.	Revisa tu app bancaria o tus mensajes SMS, ya que en muchos casos tu banco envía un código de verificación o una alerta de seguridad que debes autorizar para completar la compra.
+	4.	Evita intentar la compra repetidamente, ya que esto puede provocar el bloqueo temporal de tu tarjeta. En ese caso, comunícate directamente con tu banco y solicita que autoricen el cargo de forma manual.`;
+          break;
       }
-
       await enviarMensaje(senderNumber, mess_opt);
 
       await fetch(`https://graph.facebook.com/v18.0/${PHONE_NUMBER_ID}/messages`, {
@@ -452,7 +458,7 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
       await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
 
       return res.status(200).end();
-    } else if (/^(1|2|3|7|8)$/.test(opcion)) {
+    } else if (/^(1|2|3|7|9)$/.test(opcion)) {
 
       const eventosValidos = Array.isArray(eventos) && eventos.length && !eventos[0]?.status;
       if (!eventosValidos) {
@@ -494,15 +500,6 @@ ${evento.link}`;
 👉 ${evento.link}
 
 Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a disponibilidad.`;
-        await enviarMensaje(senderNumber, mess_opt);
-        await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
-        return res.status(200).end();
-      } else if (/^8$/.test(opcion)) {
-        mess_opt = `Si tu pago fue rechazado, te recomendamos lo siguiente:
-	1.	Verifica que ingresaste correctamente la fecha de vencimiento y el código de seguridad (CVV).
-	2.	Asegúrate de contar con fondos suficientes y de estar utilizando tu tarjeta digital, si es requerida por tu banco.
-	3.	Revisa tu app bancaria o tus mensajes SMS, ya que en muchos casos tu banco envía un código de verificación o una alerta de seguridad que debes autorizar para completar la compra.
-	4.	Evita intentar la compra repetidamente, ya que esto puede provocar el bloqueo temporal de tu tarjeta. En ese caso, comunícate directamente con tu banco y solicita que autoricen el cargo de forma manual.`;
         await enviarMensaje(senderNumber, mess_opt);
         await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
         return res.status(200).end();
