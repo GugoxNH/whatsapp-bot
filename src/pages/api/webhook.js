@@ -280,7 +280,7 @@ Ejemplos de respuestas válidas:
     }
 
     const prompt = construirPromptParaEvento(userMessage, eventos);
-    //console.log(prompt)
+    console.log(prompt)
 
     const respuestaIA = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -299,7 +299,7 @@ Ejemplos de respuestas válidas:
     const contenidoIA = data.choices?.[0]?.message?.content?.trim();
 
 
-    //console.log(contenidoIA);
+    console.log(contenidoIA);
 
     const indicesTexto = contenidoIA.split(",").map(i => parseInt(i.trim())).filter(n => !isNaN(n));
 
