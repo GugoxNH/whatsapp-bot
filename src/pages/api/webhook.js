@@ -261,10 +261,12 @@ Por favor indícanos tu número de orden o el evento de tu interés.
       return `
 El usuario escribió: "${userMessage}"
 
-Tu tarea es identificar si el mensaje hace referencia a algún artista o evento de esta lista, si recibes un número (1,2,3,4,5,6,7,8,9,10) regresa "no", solo actua cuando recibas un texto. 
+ORDENES
+Si el usuario escribio un número de esta lista ("1","2","3","4","5","6","7","8","9","10") regresa "no" e ignora las demás ordenes.
+Tu tarea es identificar si el mensaje hace referencia a algún artista o evento de esta lista, solo actua cuando recibas un texto. 
 Devuélveme únicamente el índice (empezando desde 0) del evento más relacionado, si hay dos eventos que coinciden regresa ambos indices separados por una coma.
 
-Lista de artistas:
+LISTA DE ARTISTAS:
 ${listaArtistas}
 
 Si no hay coincidencia clara, responde solamente con: "no".
@@ -295,7 +297,7 @@ Ejemplos de respuestas válidas:
     const contenidoIA = data.choices?.[0]?.message?.content?.trim();
 
 
-    console.log(contenidoIA);
+    console.log("Seleccion IA", contenidoIA);
 
     const indicesTexto = contenidoIA.split(",").map(i => parseInt(i.trim())).filter(n => !isNaN(n));
 
