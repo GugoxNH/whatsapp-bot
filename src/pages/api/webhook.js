@@ -89,10 +89,6 @@ export default async function handler(req, res) {
       eventos = [{ status: "desactivado" }];
     }
 
-
-
-    console.log("EVENTOS: ", eventos);
-
     /*  /
      const response = await fetch("https://mipase.pagaboletos.com/wp-json/whatsapp-api/v1/products");
      const eventos = await response.json(); */
@@ -303,6 +299,8 @@ Ejemplos de respuestas válidas:
 
     const indicesTexto = contenidoIA.split(",").map(i => parseInt(i.trim())).filter(n => !isNaN(n));
 
+    console.log("index", indicesTexto);
+
     if (indicesTexto.length === 1) {
       // 🎯 Solo un evento detectado
       const eventoIndex = indicesTexto[0];
@@ -346,7 +344,7 @@ Ejemplos de respuestas válidas:
       const eventoElegidoIndex = sesion.posiblesEventos[seleccion - 1];
       await setSesion(senderNumber, { eventoIndex: eventoElegidoIndex });
       sesion = await getSesion(senderNumber);
-      // console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
+       console.log("🎯 Evento seleccionado desde lista:", eventos[eventoElegidoIndex].title);
 
       const mes = `Elegiste el evento ${eventos[eventoElegidoIndex].title} ¿Cómo podemos ayudarte? Elige una opción:
 1️⃣ Ver precios y zonas  
@@ -475,7 +473,7 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
         return res.status(200).end();
       }
       const evento = eventos[sesion.eventoIndex];
-      //console.log("✅ Evento desde Redis:", evento.title);
+      console.log("✅ Evento desde Redis:", evento.title);
       if (/^1$/.test(opcion)) {
         mess_opt = `Los precios y zonas disponibles para *${evento.title}* son:
 ${replyText}
