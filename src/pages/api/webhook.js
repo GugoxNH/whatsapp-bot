@@ -286,7 +286,7 @@ Ejemplos de respuestas válidas:
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini-2024-07-18",
+        model: "openai/gpt-oss-120b",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.2
       })
