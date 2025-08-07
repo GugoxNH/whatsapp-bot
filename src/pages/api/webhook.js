@@ -261,10 +261,9 @@ Por favor indícanos tu número de orden o el evento de tu interés.
       return `
 El usuario escribió: "${userMessage}"
 
-ORDENES
-Si el usuario escribio un número de esta lista ("1","2","3","4","5","6","7","8","9","10") regresa "no" e ignora las demás ordenes.
-Tu tarea es identificar si el mensaje hace referencia a algún artista o evento de esta lista, solo actua cuando recibas un texto. 
-Devuélveme únicamente el índice (empezando desde 0) del evento más relacionado, si hay dos eventos que coinciden regresa ambos indices separados por una coma.
+Instrucciones: Si el usuario envía un número que está en la lista del 1 al 10 (incluyendo ambos), entonces simplemente responde "no" y no proceses ninguna otra instrucción. Si el mensaje se refiere a un artista o evento según la lista proporcionada, responde con el índice correspondiente (empezando desde 0). Si hay coincidencias múltiples, devuélvelos separados por comas. Si no hay coincidencias claras, simplemente responde "no".
+
+Lista de números a ignorar: "1", "2", "3", "4", "5", "6", "7", "8", "9", "10".
 
 LISTA DE ARTISTAS:
 ${listaArtistas}
