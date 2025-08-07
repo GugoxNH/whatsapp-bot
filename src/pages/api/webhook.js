@@ -211,7 +211,8 @@ Por favor indícanos tu número de orden o el evento de tu interés.
 5️⃣ Enviar identificación   
 6️⃣ Validar pago o correo   
 7️⃣ Comprar boletos
-8️⃣ Por que no pasa mi pago`;
+8️⃣ Por que no pasa mi pago
+9️⃣ Hablar con un asesor`;
 
     const contactoPayload = {
       messaging_product: "whatsapp",
@@ -317,7 +318,8 @@ Ejemplos de respuestas válidas:
 6️⃣ Validar pago o correo   
 7️⃣ Comprar boletos
 8️⃣ Por que no pasa mi pago
-9️⃣ Elegir otro evento`);
+9️⃣ Hablar con un asesor
+🔟 Elegir otro evento`);
       return res.status(200).end();
     }
 
@@ -355,7 +357,8 @@ Ejemplos de respuestas válidas:
 6️⃣ Validar pago o correo   
 7️⃣ Comprar boletos
 8️⃣ Por que no pasa mi pago
-9️⃣ Elegir otro evento`;
+9️⃣ Hablar con un asesor
+🔟 Elegir otro evento`;
       await enviarMensaje(senderNumber, mes);
       return res.status(200).end();
     }
@@ -459,7 +462,7 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
       await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
 
       return res.status(200).end();
-    } else if (/^(1|2|3|7|9)$/.test(opcion)) {
+    } else if (/^(1|2|3|7|10)$/.test(opcion)) {
 
       const eventosValidos = Array.isArray(eventos) && eventos.length && !eventos[0]?.status;
       if (!eventosValidos) {
@@ -468,7 +471,7 @@ Esto nos ayuda a verificar que el titular de la tarjeta es quien realizó la com
       }
 
       if (sesion?.eventoIndex === undefined) {
-        await enviarMensaje(senderNumber, 'Necesitas escribir el nombre del evento del cual quiere obtener esta información');
+        await enviarMensaje(senderNumber, 'Necesitas escribir el nombre del evento y la ciudad en la cual se llevara acabo para obtener esta información');
         return res.status(200).end();
       }
       const evento = eventos[sesion.eventoIndex];
@@ -504,7 +507,7 @@ Te recomendamos hacerlo lo antes posible, ya que los boletos están sujetos a di
         await enviarMensaje(senderNumber, mess_opt);
         await enviarMensaje(senderNumber, "Si quieres más información de las opciones, manda otro número");
         return res.status(200).end();
-      } else if (/^9$/.test(opcion)) {
+      } else if (/^10$/.test(opcion)) {
         await setSesion(senderNumber, {}); // Borra la sesión
         sesion = await getSesion(senderNumber); // Reinicia vacía
         await enviarMensaje(senderNumber, mensajeSaludo);
