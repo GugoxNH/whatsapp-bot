@@ -265,7 +265,7 @@ Por favor indícanos tu número de orden o el evento de tu interés.
       return `
 El usuario escribió: "${userMessage}"
 
-Tu tarea es identificar si el mensaje hace referencia a algún artista o evento de esta lista, si recibes un número regresa "no", solo actua cuando recibas un texto. 
+Tu tarea es identificar si el mensaje hace referencia a algún artista o evento de esta lista, si recibes un número (1,2,3,4,5,6,7,8,9,10) regresa "no", solo actua cuando recibas un texto. 
 Devuélveme únicamente el índice (empezando desde 0) del evento más relacionado, si hay dos eventos que coinciden regresa ambos indices separados por una coma.
 
 Lista de artistas:
@@ -417,7 +417,7 @@ Ejemplos de respuestas válidas:
     const opcion = userMessage.trim();
     let mess_opt = "";
 
-    if (/^(4|5|6|8)$/.test(opcion)) {
+    if (/^(4|5|6|8|9)$/.test(opcion)) {
       switch (opcion) {
         case "4":
           mess_opt = `📩 No recibí mi correo con los boletos
